@@ -1,0 +1,2765 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="color-scheme" content="dark">
+<meta name="theme-color" content="#120d0b">
+<title>The Bloody Inn</title>
+<link rel="icon" href="icons/favicon.ico" sizes="any">
+<link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="The Bloody Inn">
+<meta name="description" content="Unofficial fan implementation of The Bloody Inn for personal play. Works offline.">
+<style>
+:root {
+  --bg: #120d0b; --panel: #1d1511; --panel2: #271c16; --line: #3d2d22; --ink: #efe3c4; --muted: #a8977a; --gold: #e0b850; --blood: #b3161b; --ok: #5fbf6a;
+  --fc: Georgia, 'Times New Roman', serif; --fs: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; --top: 52px;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; background: var(--bg); color: var(--ink); font: 15px/1.4 var(--fs); -webkit-tap-highlight-color: transparent; }
+button, select, input { font: inherit; color: inherit; }
+button { background: var(--panel2); border: 1px solid var(--line); border-radius: 8px; padding: 7px 12px; cursor: pointer; }
+button:hover:not([disabled]) { border-color: #6b513c; }
+button:focus-visible, select:focus-visible, input:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+button[disabled] { opacity: .45; cursor: not-allowed; }
+button.primary { background: linear-gradient(#a11a1a, #7a1010); border-color: #c33; color: #fff4e4; font-weight: 600; }
+button.ghost { background: transparent; border-color: transparent; }
+a { color: var(--gold); }
+.muted { color: var(--muted); } .bad { color: #ff7b6b; }
+h1, h2, h3 { font-family: var(--fc); font-weight: 700; margin: 0; }
+.cfont { font-family: Georgia, serif; }
+.spacer { flex: 1; }
+kbd { background: var(--panel2); border: 1px solid var(--line); border-bottom-width: 3px; border-radius: 5px; padding: 1px 6px; font: 13px var(--fs); }
+.toast { position: fixed; left: 50%; bottom: 22%; transform: translateX(-50%); background: rgba(20, 12, 10, .95); border: 1px solid var(--gold); padding: 10px 16px; border-radius: 10px; z-index: 90; white-space: pre-line; text-align: center; max-width: 90vw; animation: fadein .2s; }
+@keyframes fadein { from { opacity: 0; transform: translate(-50%, 8px); } }
+
+/* ---------- landing ---------- */
+.landing { min-height: 100vh; display: grid; grid-template-columns: 1fr minmax(320px, 460px); }
+.landing .art { background: #0d0907 url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMjAwIDkwMCIgcHJlc2VydmVBc3BlY3RSYXRpbz0ieE1pZFlNaWQgc2xpY2UiPgogIDxkZWZzPgogICAgPHJhZGlhbEdyYWRpZW50IGlkPSJza3kiIGN4PSIuNjIiIGN5PSIuMjgiIHI9Ii45Ij48c3RvcCBvZmZzZXQ9IjAiIHN0b3AtY29sb3I9IiM1YTE3MTIiLz48c3RvcCBvZmZzZXQ9Ii40NSIgc3RvcC1jb2xvcj0iIzI2MTAwYyIvPjxzdG9wIG9mZnNldD0iMSIgc3RvcC1jb2xvcj0iIzBhMDYwNSIvPjwvcmFkaWFsR3JhZGllbnQ+CiAgICA8cmFkaWFsR3JhZGllbnQgaWQ9Im1vb24iIGN4PSIuNDIiIGN5PSIuMzgiIHI9Ii42MiI+PHN0b3Agb2Zmc2V0PSIwIiBzdG9wLWNvbG9yPSIjZmY2YTQ1Ii8+PHN0b3Agb2Zmc2V0PSIuNjUiIHN0b3AtY29sb3I9IiNjMzE2MWIiLz48c3RvcCBvZmZzZXQ9IjEiIHN0b3AtY29sb3I9IiM2ZDBiMGUiLz48L3JhZGlhbEdyYWRpZW50PgogICAgPHJhZGlhbEdyYWRpZW50IGlkPSJnbG93IiBjeD0iLjUiIGN5PSIuNSIgcj0iLjUiPjxzdG9wIG9mZnNldD0iMCIgc3RvcC1jb2xvcj0iI2ZmYjM0NyIgc3RvcC1vcGFjaXR5PSIuNTUiLz48c3RvcCBvZmZzZXQ9IjEiIHN0b3AtY29sb3I9IiNmZmIzNDciIHN0b3Atb3BhY2l0eT0iMCIvPjwvcmFkaWFsR3JhZGllbnQ+CiAgICA8cGF0dGVybiBpZD0iaGF0Y2giIHdpZHRoPSI2IiBoZWlnaHQ9IjYiIHBhdHRlcm5Vbml0cz0idXNlclNwYWNlT25Vc2UiIHBhdHRlcm5UcmFuc2Zvcm09InJvdGF0ZSgzNSkiPjxyZWN0IHdpZHRoPSI2IiBoZWlnaHQ9IjYiIGZpbGw9IiMwZDA3MDYiLz48cmVjdCB3aWR0aD0iMS40IiBoZWlnaHQ9IjYiIGZpbGw9IiMxYzBmMGMiLz48L3BhdHRlcm4+CiAgPC9kZWZzPgogIDxyZWN0IHdpZHRoPSIxMjAwIiBoZWlnaHQ9IjkwMCIgZmlsbD0idXJsKCNza3kpIi8+CiAgPGcgZmlsbD0iI2YzZGZiNSIgb3BhY2l0eT0iLjU1Ij48Y2lyY2xlIGN4PSIxMjAiIGN5PSI5MCIgcj0iMS42Ii8+PGNpcmNsZSBjeD0iMjYwIiBjeT0iMTcwIiByPSIxLjIiLz48Y2lyY2xlIGN4PSI0MjAiIGN5PSI2MCIgcj0iMS40Ii8+PGNpcmNsZSBjeD0iOTgwIiBjeT0iODAiIHI9IjEuMyIvPjxjaXJjbGUgY3g9IjExMTAiIGN5PSIyMTAiIHI9IjEuNiIvPjxjaXJjbGUgY3g9IjU2MCIgY3k9IjE0MCIgcj0iMSIvPjxjaXJjbGUgY3g9IjcwIiBjeT0iMzAwIiByPSIxLjIiLz48L2c+CiAgPGNpcmNsZSBjeD0iNzYwIiBjeT0iMjUwIiByPSIxNTAiIGZpbGw9InVybCgjbW9vbikiLz4KICA8cGF0aCBkPSJNNzAwIDIwMCBDNzMwIDE4MCA3NzAgMTkwIDc5MCAyMTUgTTY5MCAyOTAgQzcyMCAzMDAgNzQwIDI4MCA3NzAgMzAwIiBzdHJva2U9IiM4YTEwMTMiIHN0cm9rZS13aWR0aD0iNyIgZmlsbD0ibm9uZSIgb3BhY2l0eT0iLjU1IiBzdHJva2UtbGluZWNhcD0icm91bmQiLz4KICA8cGF0aCBkPSJNMCA1NjAgQzE4MCA1MDAgMzIwIDUzMCA0NzAgNTA1IEM2NDAgNDc2IDc2MCA1MjAgOTAwIDUwMCBDMTAyMCA0ODQgMTExMCA1MDUgMTIwMCA1MjAgTDEyMDAgOTAwIEwwIDkwMCBaIiBmaWxsPSIjMTcwYjA5Ii8+CiAgPHBhdGggZD0iTTAgNjQwIEMyMDAgNjAwIDM4MCA2NDAgNjAwIDYxNSBDODAwIDU5MiAxMDAwIDYzMCAxMjAwIDYxMCBMMTIwMCA5MDAgTDAgOTAwIFoiIGZpbGw9InVybCgjaGF0Y2gpIi8+CiAgPGcgZmlsbD0iIzA4MDQwMyI+CiAgICA8cGF0aCBkPSJNMzYwIDY0MCBMMzYwIDQ0MCBMNTYwIDMwMCBMNzYwIDQ0MCBMNzYwIDY0MCBaIi8+CiAgICA8cGF0aCBkPSJNNzYwIDY0MCBMNzYwIDUwMCBMOTAwIDQzMCBMMTAwMCA1MDAgTDEwMDAgNjQwIFoiLz4KICAgIDxyZWN0IHg9IjY2MCIgeT0iMzMwIiB3aWR0aD0iNDAiIGhlaWdodD0iMTAwIi8+PHJlY3QgeD0iNjUyIiB5PSIzMjIiIHdpZHRoPSI1NiIgaGVpZ2h0PSIxNCIvPgogICAgPHBhdGggZD0iTTMwMCA2NDAgTDMwMCA1NjAgTDM2MCA1MjAgTDM2MCA2NDAgWiIvPgogIDwvZz4KICA8cGF0aCBkPSJNNjc2IDMyMCBDNjcwIDI4MCA3MDAgMjYwIDY5MCAyMjAgQzY4NiAyMDAgNzAwIDE4MCA3MTIgMTcwIiBzdHJva2U9IiMzYTJhMjQiIHN0cm9rZS13aWR0aD0iMTAiIGZpbGw9Im5vbmUiIG9wYWNpdHk9Ii42IiBzdHJva2UtbGluZWNhcD0icm91bmQiLz4KICA8Y2lyY2xlIGN4PSI1NjAiIGN5PSI1MjAiIHI9IjEyMCIgZmlsbD0idXJsKCNnbG93KSIvPgogIDxnIGZpbGw9IiNmMmI1NGEiPgogICAgPHJlY3QgeD0iNDIwIiB5PSI0NzAiIHdpZHRoPSI1NiIgaGVpZ2h0PSI1NiIgcng9IjQiLz48cmVjdCB4PSI2NDQiIHk9IjQ3MCIgd2lkdGg9IjU2IiBoZWlnaHQ9IjU2IiByeD0iNCIvPjxyZWN0IHg9Ijg0MCIgeT0iNTMwIiB3aWR0aD0iNDQiIGhlaWdodD0iNDQiIHJ4PSI0IiBvcGFjaXR5PSIuNzUiLz4KICAgIDxwYXRoIGQ9Ik01MjIgNjQwIEw1MjIgNTUyIFE1NjAgNTE2IDU5OCA1NTIgTDU5OCA2NDAgWiIvPgogIDwvZz4KICA8ZyBmaWxsPSIjMDgwNDAzIj48cmVjdCB4PSI0NDYiIHk9IjQ3MCIgd2lkdGg9IjQiIGhlaWdodD0iNTYiLz48cmVjdCB4PSI0MjAiIHk9IjQ5NiIgd2lkdGg9IjU2IiBoZWlnaHQ9IjQiLz48cmVjdCB4PSI2NzAiIHk9IjQ3MCIgd2lkdGg9IjQiIGhlaWdodD0iNTYiLz48cmVjdCB4PSI2NDQiIHk9IjQ5NiIgd2lkdGg9IjU2IiBoZWlnaHQ9IjQiLz48cmVjdCB4PSI4NjAiIHk9IjUzMCIgd2lkdGg9IjQiIGhlaWdodD0iNDQiLz48L2c+CiAgPHBhdGggZD0iTTU0MCA1NjAgTDU0MCA2NDAgTDU1NiA2NDAgTDU1NiA1NzIgWiIgZmlsbD0iIzNhMWExMCIvPgogIDxnIHRyYW5zZm9ybT0idHJhbnNsYXRlKDU2MCAzODIpIj48cmVjdCB4PSItNzAiIHk9Ii0yMCIgd2lkdGg9IjE0MCIgaGVpZ2h0PSI0MCIgcng9IjYiIGZpbGw9IiMyYTE0MGQiIHN0cm9rZT0iIzdhNGEyYSIgc3Ryb2tlLXdpZHRoPSI0Ii8+PHBhdGggZD0iTS03MCAtMjAgTC02MCAtNDAgTTcwIC0yMCBMNjAgLTQwIiBzdHJva2U9IiM3YTRhMmEiIHN0cm9rZS13aWR0aD0iNCIvPgogICAgPHBhdGggZD0iTS0zMCAtOCBMLTMwIDggTS0xNiA4IEwtMTYgLTggTC0yIDggTC0yIC04IE0xMiA4IEwxMiAtOCBMMjYgOCBMMjYgLTgiIHN0cm9rZT0iI2M5OWI1YSIgc3Ryb2tlLXdpZHRoPSIzLjQiIGZpbGw9Im5vbmUiLz48L2c+CiAgPGcgZmlsbD0iIzA4MDQwMyI+CiAgICA8cGF0aCBkPSJNMTUwIDY0MCBMMTUwIDUyMCBNMTUwIDU2MCBMMTIwIDUzMCBNMTUwIDU4MCBMMTg1IDU0NSBNMTUwIDU0MCBMMTMwIDUwNSIgc3Ryb2tlPSIjMDgwNDAzIiBzdHJva2Utd2lkdGg9IjEwIiBzdHJva2UtbGluZWNhcD0icm91bmQiLz4KICAgIDxwYXRoIGQ9Ik0xMDgwIDY0MCBMMTA4MCA0ODAgTTEwODAgNTIwIEwxMDUwIDQ3MCBNMTA4MCA1NjAgTDExMjAgNTEwIE0xMDgwIDYwMCBMMTA0MCA1ODAiIHN0cm9rZT0iIzA4MDQwMyIgc3Ryb2tlLXdpZHRoPSIxMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIi8+CiAgPC9nPgogIDxnIGZpbGw9IiMwODA0MDMiPgogICAgPHBhdGggZD0iTTg4MCAxNzAgcTE0IC0xMiAyOCAwIHEtMTQgLTQgLTI4IDAgWiBNOTAwIDE3NSBsLTYgOCBsMTIgMCBaIi8+CiAgICA8cGF0aCBkPSJNOTYwIDIxMCBxMTIgLTEwIDI0IDAgcS0xMiAtMyAtMjQgMCBaIi8+CiAgICA8cGF0aCBkPSJNODMwIDEyMCBxMTAgLTggMjAgMCBxLTEwIC0zIC0yMCAwIFoiLz4KICA8L2c+CiAgPGcgZmlsbD0iIzhmMTAxMyIgb3BhY2l0eT0iLjkiPjxwYXRoIGQ9Ik01NjAgNzAwIEM1NTIgNzE0IDU0OCA3MjIgNTQ4IDczMCBBMTIgMTIgMCAwIDAgNTcyIDczMCBDNTcyIDcyMiA1NjggNzE0IDU2MCA3MDAgWiIvPjxjaXJjbGUgY3g9IjYwMCIgY3k9Ijc0MCIgcj0iNiIvPjxjaXJjbGUgY3g9IjUyMCIgY3k9Ijc1MiIgcj0iNCIvPjwvZz4KICA8cGF0aCBkPSJNMCA3NjAgQzMwMCA3MzAgNjAwIDc3MCA5MDAgNzQ1IEMxMDIwIDczNSAxMTIwIDc0MiAxMjAwIDc1MCBMMTIwMCA5MDAgTDAgOTAwIFoiIGZpbGw9IiMwNjAzMDIiLz4KPC9zdmc+Cg==") center / cover no-repeat; min-height: 280px; }
+.landing .box { padding: 28px 26px; background: var(--panel); border-left: 1px solid var(--line); }
+.landing h1 { font-size: 34px; color: #f3dfb5; letter-spacing: .5px; }
+.landing .sub { color: var(--muted); font-style: italic; margin: 2px 0 18px; }
+.field { margin: 12px 0; } .field > label { display: block; color: var(--muted); font-size: 13px; margin-bottom: 4px; }
+.seg { display: flex; flex-wrap: wrap; gap: 4px; } .seg button { flex: 1; padding: 7px 6px; } .seg button.on { background: #5a1212; border-color: #c33; }
+label.check { display: flex; gap: 8px; align-items: flex-start; margin: 6px 0; color: var(--ink); font-size: 14px; } label.check input { margin-top: 3px; accent-color: var(--blood); }
+details.seats summary { cursor: pointer; color: var(--muted); font-size: 13px; }
+.seatrow { display: flex; gap: 6px; align-items: center; margin: 6px 0; } .seatrow i { width: 14px; height: 14px; border-radius: 50%; background: var(--pc); flex: none; border: 2px solid #000; }
+.seatrow input { flex: 1; min-width: 0; background: var(--panel2); border: 1px solid var(--line); border-radius: 7px; padding: 6px 8px; }
+.seatrow select, .menu select { background: var(--panel2); border: 1px solid var(--line); border-radius: 7px; padding: 6px; }
+.row { display: flex; gap: 8px; flex-wrap: wrap; } .row button { flex: 1; }
+.tourhint { font-size: 13px; color: var(--muted); }
+.foot { margin-top: 18px; font-size: 12px; color: var(--muted); }
+.l-ver { position: fixed; left: 12px; bottom: 6px; margin: 0; font-size: 12px; color: var(--muted); }
+.l-ver button { padding: 1px 6px; font-size: 12px; background: transparent; border-color: var(--line); color: var(--muted); }
+@media (max-width: 759px) { .landing { grid-template-columns: 1fr; } .landing .art { min-height: 34vh; } .landing .box { border-left: 0; padding-bottom: 46px; } .l-ver { position: static; padding: 0 0 14px 26px; background: var(--panel); } }
+
+/* ---------- top bar ---------- */
+.top { height: var(--top); display: flex; align-items: center; gap: 6px; padding: 0 8px; background: #0c0806; border-bottom: 1px solid var(--line); overflow-x: auto; scrollbar-width: none; position: relative; z-index: 5; }
+.top::-webkit-scrollbar { display: none; }
+.top > * { flex: none; } .top button { padding: 5px 9px; }
+.top .title { font-family: var(--fc); font-weight: 700; color: #f3dfb5; margin-right: 4px; }
+.menubtn { padding: 4px 6px !important; display: flex; }
+.tpill { display: inline-flex; align-items: center; gap: 5px; background: var(--panel2); border: 1px solid var(--line); border-radius: 999px; padding: 4px 10px; font-size: 13px; white-space: nowrap; }
+.tpill small { color: var(--muted); font-size: 11px; } .tpill em { color: #ff7b6b; font-style: normal; font-weight: 700; }
+.tpill.turn i { width: 10px; height: 10px; border-radius: 50%; background: var(--c); box-shadow: 0 0 8px var(--c); }
+.tpill .bar { width: 46px; height: 5px; background: #000; border-radius: 3px; overflow: hidden; } .tpill .bar i { display: block; height: 100%; background: var(--gold); }
+.tpill.cops { border-color: #c33; background: #3a0f0f; animation: copglow 1.6s infinite; }
+@keyframes copglow { 50% { box-shadow: 0 0 10px #f33; } }
+.money { position: relative; display: inline-flex; align-items: center; gap: 4px; background: var(--panel2); border: 1px solid var(--line); border-radius: 999px; padding: 3px 9px 3px 5px; font-size: 13px; }
+.money i { width: 14px; height: 14px; border-radius: 50%; background: var(--pc); border: 2px solid #000; }
+.money.big { font-size: 15px; border-color: var(--pc); } .money.act { box-shadow: 0 0 0 2px var(--pc); }
+.money small { color: var(--muted); font-size: 11px; } .money .chk { font-size: 12px; }
+.delta { position: absolute; right: -2px; top: -4px; font-weight: 800; font-size: 13px; animation: rise 1.7s forwards; pointer-events: none; text-shadow: 0 1px 2px #000; }
+.delta.up { color: #8f8; } .delta.dn { color: #f88; }
+@keyframes rise { from { transform: translateY(6px); opacity: 0; } 15% { opacity: 1; } to { transform: translateY(-16px); opacity: 0; } }
+
+/* ---------- main layout ---------- */
+.main { display: grid; grid-template-columns: 1fr minmax(310px, 370px); height: calc(100vh - var(--top)); height: calc(100dvh - var(--top)); }
+.play { overflow: auto; padding: 10px; }
+.side { border-left: 1px solid var(--line); background: var(--panel); display: flex; flex-direction: column; min-height: 0; }
+.side .grab { display: none; }
+.panelrest { display: flex; flex-direction: column; min-height: 0; flex: 1; }
+.tabs { display: flex; border-bottom: 1px solid var(--line); } .tabs button { flex: 1; border: 0; border-radius: 0; background: transparent; color: var(--muted); padding: 9px 4px; }
+.tabs button.on { color: var(--ink); box-shadow: inset 0 -3px var(--blood); }
+.tabbody { overflow: auto; padding: 8px 10px 16px; flex: 1; }
+
+/* ---------- inn ---------- */
+.inn { max-width: 1100px; margin: 0 auto; }
+.rooms { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+.room { background: #241914; border: 2px solid var(--line); border-radius: 10px; padding: 4px; cursor: pointer; position: relative; transition: transform .12s; }
+.room.shut { opacity: .4; }
+.room .door { display: flex; align-items: center; gap: 4px; font-size: 12px; min-height: 22px; padding: 0 2px 3px; }
+.room .door b { font-family: var(--fc); font-size: 14px; color: #f3dfb5; }
+.keychip, .rschip { display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 18px; border-radius: 4px; background: var(--c); border: 1px solid #000; font-size: 11px; }
+.closed { color: var(--muted); font-size: 11px; } .cop { margin-left: auto; font-size: 15px; animation: copglow 1.6s infinite; border-radius: 50%; }
+.slot { aspect-ratio: 100 / 140; display: flex; }
+.slot .card, .hc .card, .annex .card, .stack .card, .pcard .card { width: 100%; height: auto; display: block; }
+.empty { flex: 1; border: 2px dashed #4a372a; border-radius: 8px; display: flex; align-items: center; justify-content: center; color: var(--muted); font-size: 12px; }
+.tgt { outline: 3px solid var(--gold); outline-offset: 1px; box-shadow: 0 0 14px rgba(224, 184, 80, .55); animation: pulse 1.6s infinite; }
+.room.tgt:hover, .hc.tgt:hover { transform: translateY(-2px); }
+.chosen { outline: 3px solid #ff4a3a !important; box-shadow: 0 0 16px rgba(255, 60, 40, .6) !important; animation: none; }
+.kcur { outline: 3px dashed #7fd3ff !important; outline-offset: 3px; }
+@keyframes pulse { 50% { box-shadow: 0 0 4px rgba(224, 184, 80, .25); } }
+.fl { animation: flash 1.1s; } @keyframes flash { 0%, 40% { box-shadow: 0 0 0 4px #fff3b0, 0 0 22px #ffd24a; } }
+.noanim *, .noanim *::before { animation: none !important; transition: none !important; }
+.mid { display: grid; grid-template-columns: 74px 1fr 74px; gap: 8px; align-items: center; margin: 8px 0; }
+.boardwrap { position: relative; } .boardwrap svg { width: 100%; height: auto; display: block; border-radius: 8px; }
+.bigb { position: absolute; right: 4px; top: 4px; padding: 0 6px !important; background: rgba(0, 0, 0, .55) !important; z-index: 1; }
+.board .bistro { cursor: pointer; } .board .bistro.tgt { animation: none; outline: none; box-shadow: none; }
+.stack { position: relative; padding: 4px; display: flex; flex-direction: column; align-items: center; gap: 2px; width: 100%; }
+.stack .cnt { position: absolute; top: 2px; right: 2px; background: #000; border: 1px solid var(--gold); border-radius: 999px; font-size: 12px; padding: 0 6px; font-weight: 700; }
+.stack .lab { font-size: 11px; color: var(--muted); } .stack .big { font-size: 28px; line-height: 1.2; }
+.stack .empty { width: 100%; min-height: 60px; font-size: 10px; }
+.stk2 { display: flex; flex-direction: column; gap: 6px; }
+.exitbars { display: flex; gap: 2px; align-items: flex-end; height: 40px; width: 100%; padding: 0 4px; } .exitbars i { flex: 1; background: var(--c); height: var(--h); min-height: 2px; border-radius: 2px 2px 0 0; }
+.bigboard svg { width: 100%; height: auto; }
+@media (max-width: 520px) { .mid { grid-template-columns: 52px 1fr 52px; gap: 4px; } .rooms { gap: 4px; } .room { padding: 2px; border-radius: 7px; } .room .door { font-size: 10px; } .keychip, .rschip { width: 18px; height: 15px; font-size: 9px; } }
+
+/* ---------- tableau ---------- */
+.tableau { max-width: 1100px; margin: 12px auto 0; border-top: 3px solid var(--pc); padding-top: 6px; }
+.trow h3 { font-size: 14px; color: #f3dfb5; margin: 6px 0 4px; } .trow h3 small { color: var(--muted); font-family: var(--fs); font-weight: 400; font-size: 12px; margin-left: 6px; }
+.trow.warn h3 { color: #ff8a7a; }
+.cards { display: flex; gap: 6px; overflow-x: auto; padding: 4px 2px 8px; }
+.hc, .annex { flex: none; width: 84px; position: relative; cursor: pointer; border-radius: 8px; transition: transform .12s; }
+.hc.paying { transform: translateY(-6px); }
+.paybadge { position: absolute; left: 2px; right: 2px; bottom: 4px; text-align: center; font-size: 10px; font-weight: 700; border-radius: 4px; padding: 1px 0; background: #6b1a14; }
+.paybadge.hand { background: #2c6b34; } .paybadge.bistro { background: #8a6a12; }
+.annex .cap { font-size: 11px; text-align: center; margin-top: 2px; display: flex; gap: 3px; justify-content: center; flex-wrap: wrap; }
+.tuck { background: #3b0d0b; border: 1px solid #7a2a22; border-radius: 3px; padding: 0 3px; font-size: 10px; }
+.annex.sm { width: 70px; }
+.none { color: var(--muted); font-size: 13px; padding: 8px 0; }
+@media (max-width: 520px) { .hc, .annex { width: 64px; } }
+@media (min-width: 1100px) {
+  .play { display: grid; grid-template-columns: minmax(0, 720px) minmax(260px, 1fr); gap: 14px; align-items: start; }
+  .inn { width: 100%; }
+  .tableau { margin: 0; border-top: 0; border-left: 3px solid var(--pc); padding: 0 0 0 10px; }
+  .tableau .cards { flex-wrap: wrap; overflow: visible; }
+}
+@media (min-width: 760px) and (max-width: 1099px) { .inn { max-width: 640px; } .tableau { max-width: 640px; } }
+
+/* ---------- prompt ---------- */
+.prompt { padding: 10px 12px; border-bottom: 1px solid var(--line); background: linear-gradient(#2a1c15, var(--panel)); display: flex; flex-wrap: wrap; gap: 8px; align-items: flex-start; }
+.prompt .ptext { flex: 1 1 200px; font-size: 14px; } .prompt .ptext small { color: var(--muted); }
+.prompt .pcard { width: 62px; flex: none; }
+.prompt .pbtns, .prompt .dests { flex: 1 1 100%; display: flex; flex-wrap: wrap; gap: 6px; }
+.prompt .dests button { border-left: 4px solid var(--pc); font-size: 13px; } .prompt .dests button.on { background: #4a1612; border-color: #f55; }
+.prompt .dests small { color: var(--muted); }
+.prompt.wait .dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: var(--pc); margin-right: 4px; animation: pulse 1s infinite; box-shadow: 0 0 6px var(--pc); }
+.pv { margin-top: 4px; color: #b9e6a8; font-size: 13px; } .perr { margin-top: 4px; color: #ff8a7a; font-size: 13px; }
+.pwarn { flex: 1 1 100%; background: #3a0f0f; border: 1px solid #7a2222; border-radius: 8px; padding: 6px 8px; font-size: 13px; }
+.prompt.warnp { background: linear-gradient(#3a120f, var(--panel)); }
+.launder { flex: 1 1 100%; display: flex; align-items: center; gap: 8px; } .launder span { flex: 1; text-align: center; font-size: 14px; } .launder button { width: 40px; font-size: 18px; padding: 4px; }
+
+/* ---------- side panel content ---------- */
+.pl { border: 1px solid var(--line); border-left: 4px solid var(--pc, var(--line)); border-radius: 8px; padding: 6px 8px; margin-bottom: 8px; background: #1a130f; }
+.pl.act { box-shadow: 0 0 0 1px var(--pc); }
+.plh { display: flex; align-items: center; gap: 6px; width: 100%; background: transparent; border: 0; padding: 2px 0; text-align: left; }
+.plh i { width: 12px; height: 12px; border-radius: 50%; background: var(--pc); border: 2px solid #000; } .plh small { color: var(--muted); font-size: 12px; } .plh .tot { margin-left: auto; font-weight: 800; color: var(--gold); }
+.plrow { font-size: 13px; margin: 3px 0; display: flex; flex-wrap: wrap; gap: 4px; align-items: center; }
+.chip { display: inline-flex; align-items: center; gap: 3px; font-size: 11px; padding: 1px 7px; border-radius: 999px; background: color-mix(in srgb, var(--c) 35%, #1a130f); border: 1px solid var(--c); }
+button.chip { padding: 2px 7px; } .chip small { color: var(--ink); opacity: .8; }
+.intel { margin: 4px 0; padding-left: 18px; font-size: 13px; }
+.jr { font-family: var(--fc); color: var(--gold); margin: 8px 0 3px; font-size: 13px; }
+.je { font-size: 13px; padding: 3px 6px; border-left: 3px solid var(--pc); margin: 2px 0; } .je.link { cursor: pointer; } .je.link:hover { background: var(--panel2); }
+.je.k-police, .je.k-end { color: #ff9a8a; } .je.k-round, .je.k-season { color: var(--muted); font-style: italic; } .je.k-kill { color: #f6b2a6; }
+
+/* ---------- phone: bottom sheet ---------- */
+@media (max-width: 759px) {
+  .main { display: block; height: auto; }
+  .play { padding: 6px 6px 48vh; height: calc(100dvh - var(--top)); }
+  .side { position: fixed; left: 0; right: 0; bottom: 0; max-height: 56vh; border-left: 0; border-top: 2px solid var(--line); border-radius: 14px 14px 0 0; z-index: 6; box-shadow: 0 -8px 24px rgba(0, 0, 0, .6); }
+  .side .grab { display: block; background: transparent; border: 0; padding: 6px 0 2px; width: 100%; } .side .grab span { display: block; margin: auto; width: 44px; height: 5px; border-radius: 3px; background: #6b513c; }
+  .side.min .panelrest { display: none; }
+  .side.min ~ * { } .side.min { max-height: 40vh; }
+  .top .title { display: none; }
+}
+
+/* ---------- modal ---------- */
+.backdrop { position: fixed; inset: 0; background: rgba(0, 0, 0, .6); display: flex; align-items: center; justify-content: center; z-index: 50; padding: 12px; }
+.backdrop.docked { background: transparent; justify-content: flex-end; pointer-events: none; } .backdrop.docked .modal { pointer-events: auto; height: 100%; max-height: 100%; }
+.modal { background: var(--panel); border: 1px solid #5a4330; border-radius: 12px; width: min(560px, 100%); max-height: 90vh; display: flex; flex-direction: column; box-shadow: 0 12px 40px rgba(0, 0, 0, .7); }
+.modal.wide { width: min(860px, 100%); }
+.mh { display: flex; align-items: center; gap: 6px; padding: 10px 12px; border-bottom: 1px solid var(--line); } .mh h2 { flex: 1; font-size: 19px; color: #f3dfb5; }
+.mb { padding: 10px 14px; overflow: auto; } .mb p { margin: 6px 0; } .mb ul { padding-left: 20px; }
+.mf { display: flex; flex-wrap: wrap; gap: 6px; padding: 10px 12px; border-top: 1px solid var(--line); }
+.cardpop { display: flex; gap: 14px; align-items: flex-start; } .cardpop .card { width: 150px; flex: none; } .cardpop .flip { display: flex; gap: 6px; } .cardpop .flip .card { width: 120px; }
+@media (max-width: 520px) { .cardpop { flex-direction: column; } .cardpop .flip .card { width: 44vw; } }
+.popcards .card { width: 76px; flex: none; }
+.sh { font-size: 15px; color: var(--gold); margin: 12px 0 4px; }
+table.res { border-collapse: collapse; width: 100%; font-size: 14px; } table.res td, table.res th { padding: 4px 6px; border-bottom: 1px solid var(--line); text-align: left; }
+table.res .w { color: var(--ok); } table.res .l { color: #ff8a7a; }
+.kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-bottom: 10px; } .kpis div { background: var(--panel2); border-radius: 8px; padding: 8px; text-align: center; font-size: 12px; color: var(--muted); } .kpis b { display: block; font-size: 22px; color: var(--ink); }
+.menu { display: flex; flex-direction: column; gap: 4px; } .menu .field { display: flex; align-items: center; gap: 8px; color: var(--ink); font-size: 14px; }
+.cl section { margin: 10px 0; } .cl h3 { font-size: 16px; display: flex; gap: 8px; align-items: baseline; } .cl h3 small { color: var(--muted); font-family: var(--fs); font-weight: 400; font-size: 12px; margin-left: auto; }
+.cl-new { background: var(--blood); color: #fff; font-size: 11px; padding: 1px 6px; border-radius: 999px; font-family: var(--fs); }
+.scorecard { width: 100%; border-radius: 8px; }
+/* result */
+.banner { font-family: var(--fc); font-size: 30px; text-align: center; color: var(--gold); margin: 4px 0 12px; animation: bannerin .6s; } .banner.lost { color: #ff6b5b; }
+@keyframes bannerin { from { transform: scale(.6); opacity: 0; } }
+.rrow { display: grid; grid-template-columns: 26px 1fr 2fr 56px; gap: 6px; align-items: center; padding: 6px 4px; border-bottom: 1px solid var(--line); }
+.rrow .rk { font-family: var(--fc); font-weight: 800; color: var(--muted); } .rrow.win .rk { color: var(--gold); }
+.rrow b { color: var(--pc); filter: brightness(1.35); } .rrow .rt { font-weight: 800; text-align: right; }
+.rrow .rbar { height: 14px; background: #000; border-radius: 7px; overflow: hidden; } .rrow .rbar i { display: block; height: 100%; width: var(--w); background: var(--pc); animation: grow 1s var(--d) both; }
+@keyframes grow { from { width: 0; } }
+.rrow small { grid-column: 2 / -1; color: var(--muted); font-size: 12px; }
+/* ai announcement, pass screen, season card */
+.aiplay { position: fixed; left: 50%; top: calc(var(--top) + 10px); transform: translateX(-50%); background: rgba(16, 10, 8, .96); border: 1px solid var(--pc); border-left: 6px solid var(--pc); border-radius: 10px; padding: 8px 14px; z-index: 40; display: flex; gap: 10px; align-items: center; max-width: min(92vw, 520px); font-size: 14px; animation: drop .25s; pointer-events: none; }
+.aiplay i { width: 12px; height: 12px; border-radius: 50%; background: var(--pc); flex: none; }
+@keyframes drop { from { transform: translate(-50%, -12px); opacity: 0; } }
+.pass { position: fixed; inset: 0; background: rgba(8, 5, 4, .97); z-index: 70; display: flex; align-items: center; justify-content: center; text-align: center; padding: 20px; }
+.pass > div { border-top: 6px solid var(--pc); background: var(--panel); padding: 24px; border-radius: 12px; max-width: 420px; }
+.chcard { position: fixed; inset: 0; background: radial-gradient(circle at 50% 30%, #3b0e0c, #080504 70%); z-index: 60; display: flex; align-items: center; justify-content: center; padding: 16px; animation: fade .4s; cursor: pointer; }
+.chcard.out { opacity: 0; transition: opacity .3s; } .chcard.still { animation: none; }
+@keyframes fade { from { opacity: 0; } }
+.chin { text-align: center; max-width: 520px; } .chk { color: var(--muted); text-transform: uppercase; letter-spacing: 2px; font-size: 12px; } .chin h2 { font-size: 42px; color: var(--gold); margin: 4px 0; }
+.chsub { color: var(--ink); margin-bottom: 12px; } .chrecap td, .chrecap th { text-align: center !important; } .up { color: #8f8; } .dn { color: #f88; }
+/* tooltip */
+.tip { position: fixed; z-index: 80; background: rgba(16, 10, 8, .97); border: 1px solid var(--gold); border-radius: 8px; padding: 7px 10px; font-size: 13px; max-width: 320px; pointer-events: none; }
+/* tour */
+#tour { position: fixed; inset: 0; z-index: 65; pointer-events: none; }
+#tour .spot { position: fixed; border-radius: 10px; box-shadow: 0 0 0 9999px rgba(0, 0, 0, .55); border: 2px solid var(--gold); transition: all .25s; }
+#tour .tcard { position: fixed; background: var(--panel); border: 1px solid var(--gold); border-radius: 12px; padding: 12px 14px; pointer-events: auto; box-shadow: 0 10px 30px rgba(0, 0, 0, .7); }
+.tstep { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; } .tcard h3 { color: var(--gold); margin: 2px 0 6px; } .tcard p { margin: 4px 0; font-size: 14px; }
+.tbtns { display: flex; gap: 6px; margin-top: 8px; } .twait { color: var(--gold); } .tdone { color: var(--ok); }
+/* debug, tests */
+.dbg { position: fixed; left: 6px; bottom: 6px; background: rgba(0, 0, 0, .85); color: #f6f; font: 11px monospace; padding: 6px; z-index: 30; max-width: 60vw; border: 1px solid #f0f; }
+.dbg textarea { width: 100%; height: 120px; font: 10px monospace; }
+.testlist { padding: 16px; font: 13px monospace; white-space: pre-wrap; } .testlist .p { color: #8f8; } .testlist .f, pre.f { color: #f88; }
+
+</style>
+</head>
+<body>
+<div id="app"></div>
+<script>
+// ===== Static game data: card types, deck sizes, board coordinates. =====
+// Card types. id | name | colour | rank | pocket money (F) | copies | annex | effect key | annex text
+const TYPES_TXT = `
+newsboy|Newsboy|blue|0|8|4|Kiosk|kiosk|Immediately earn 1F per blue annex you have built, including this one.
+representative|Representative|blue|1|12|4|Parlor|parlor|From now on, play 1 accomplice fewer to perform the Bribe a Guest action.
+concierge|Concierge|blue|2|18|3|Room Service|roomservice|Immediately place a Room Service token next to a Key token. From now on, when a Guest rents this room, he immediately pays a sum equal to his rank.
+grocer|Grocer|blue|3|26|1|Grocery|grocery|Immediately earn 4F. At the end of the game, earn 4F per blue card in the Exit Stack.
+shopkeeper|Shopkeeper|blue|3|26|1|Store|store|From now on, you can bribe as many travelers as you want in one Bribe a Guest action.
+brewer|Brewer|blue|3|26|1|Brewery|brewery|From now on, you can bribe up to four peasants simultaneously in one Bribe a Guest action.
+cultivator|Cultivator|red|0|8|4|Vegetable Garden|vegetable|Immediately earn 1F per red annex you have built, including this one.
+mechanic|Mechanic|red|1|12|4|Workshop|workshop|From now on, play 1 accomplice fewer to perform the Build an Annex action.
+distiller|Distiller|red|2|18|3|Distillery|distillery|At the end of each round, do not pay the wages for one of the accomplices in your hand.
+landscaper|Landscaper|red|3|26|1|Park|park|Immediately earn 4F. At the end of the game, earn 4F per red card in the Exit Stack.
+gardener|Gardener|red|3|26|1|Gardens|gardens|At the end of each round, earn an additional 2F during the Travelers Leave phase.
+butcher|Butcher|red|3|26|1|Butcher's Shop|butcher|From now on, you can kill as many travelers as you want in one Kill a Guest action.
+novice|Novice|purple|0|8|4|Altar|altar|Immediately earn 1F per purple annex you have built, including this one.
+monk|Monk|purple|1|12|4|Room|room|Immediately replace one of the white Key tokens with one of your Key tokens.
+abbot|Abbot|purple|2|18|3|Cellar|cellar|From now on, play 1 accomplice fewer to perform the Bury a Corpse action.
+priest|Priest|purple|3|26|1|Chapel|chapel|From now on, you are not required to discard accomplices of the other types when you use them for a Bury a Corpse action.
+bishop|Bishop|purple|3|26|1|Bishopric|bishopric|Immediately earn 4F. At the end of the game, earn 4F per purple card in the Exit Stack.
+archbishop|Archbishop|purple|3|26|1|Crypt|crypt|From now on, you can bury as many corpses as you want in one Bury a Corpse action.
+baron|Baron|green|0|8|4|Large Chandelier|chandelier|Immediately earn 4F.
+viscount|Viscount|green|1|12|4|King Size Bed|bed|Immediately earn 6F.
+count|Count|green|2|18|3|Dining Room|dining|Immediately earn 9F.
+duke|Duke|green|3|26|1|Stables|stables|Immediately earn 4F. At the end of the game, earn 4F per green card in the Exit Stack.
+marquis|Marquis|green|3|26|1|Detached House|detached|Immediately earn 18F.
+prince|Prince|green|3|26|1|Greenhouse|greenhouse|At the end of the game, earn 3F per check you have.
+peacekeeper|Peacekeeper|grey|0|8|4|||
+brigadier|Brigadier|grey|1|12|4|||
+chief|Brigadier Chief|grey|2|18|3|||
+major|Major|grey|3|26|3|||
+peasant|Peasant|yellow|0|4|8|||
+`;
+const TYPES = {};
+for (const line of TYPES_TXT.trim().split('\n')) {
+  const [id, name, color, rank, money, count, annex, effect, text] = line.split('|');
+  TYPES[id] = {id, name, color, rank: +rank, money: +money, count: +count, annex: annex || null, effect: effect || null, text: text || ''};
+}
+// Card instances: newsboy1..newsboy4, peasant1..peasant8 (1-4 one illustration, 5-8 the other).
+const CARDS = {};
+for (const t of Object.values(TYPES)) for (let i = 1; i <= t.count; i++) CARDS[t.id + i] = {id: t.id + i, type: t.id};
+const T = id => TYPES[CARDS[id].type];
+const TRAVELER_IDS = Object.keys(CARDS).filter(id => CARDS[id].type !== 'peasant');
+const PEASANT_IDS = Object.keys(CARDS).filter(id => CARDS[id].type === 'peasant');
+const artFront = id => CARDS[id].type === 'peasant' ? (+id.slice(7) <= 4 ? 'peasantA' : 'peasantB') : CARDS[id].type;
+
+const COLORS = ['blue', 'red', 'purple', 'green', 'grey', 'yellow'];
+const COLOR_NAMES = {blue: 'merchant', red: 'artisan', purple: 'religious', green: 'noble', grey: 'police', yellow: 'peasant'};
+// Aptitude: cards of this colour return to hand when played for that action.
+const APTITUDE = {blue: 'bribe', red: 'build', grey: 'kill', purple: 'bury'};
+const ACTIONS = ['bribe', 'build', 'kill', 'bury', 'pass'];
+const ACTION_NAMES = {bribe: 'Bribe a Guest', build: 'Build an Annex', kill: 'Kill a Guest', bury: 'Bury a Corpse', pass: 'Pass'};
+
+// Setup table (player aid back): cards returned to the box, by player count.
+const REMOVE = {1: {short: 34, long: 26}, 2: {short: 35, long: 25}, 3: {short: 28, long: 16}, 4: {short: 22, long: 6}};
+const NEUTRAL_KEYS = {1: 3, 2: 3, 3: 3, 4: 4};
+const START_CASH = 5, START_CHECKS = 1, CASH_CAP = 40, BARN_RANK = 1;
+const SEAT_COLORS = ['red', 'green', 'blue', 'yellow'];
+const SEAT_HEX = {red: '#b8322a', green: '#2f8a45', blue: '#2f64b0', yellow: '#d8a51c', white: '#ece6d6'};
+const SOLO_RATINGS = [[170, 'demonic innkeeper'], [150, 'evil innkeeper'], [130, 'hazardous innkeeper'], [110, 'worrying innkeeper'], [0, 'apprentice innkeeper']];
+
+// Board (photos/20261101_132430.jpg flattened by _work/board_warp.py), units: 1000 x 324.
+// Wealth Track: space | x,y
+const TRACK_TXT = `0|85,130 1|113,91 2|156,91 3|202,91 4|248,91 5|296,91 6|342,91 7|388,91 8|436,91 9|483,91 10|531,91 11|579,91 12|625,91 13|672,91
+14|714,120 15|670,152 16|623,152 17|577,152 18|530,152 19|483,152 20|437,152 21|390,152 22|342,152 23|297,152 24|250,152 25|203,152 26|156,152
+27|116,185 28|156,220 29|204,220 30|250,220 31|297,220 32|343,220 33|390,220 34|438,220 35|483,220 36|532,220 37|579,220 38|625,220 39|672,220 40|722,220`;
+const BOARD = {w: 1000, h: 324, r: 22, track: [], doors: [], bistro: {x: 808, y: 48, w: 140, h: 230}, entrance: {x: 26, y: 152}, exit: {x: 975, y: 152}};
+for (const tok of TRACK_TXT.split(/\s+/)) { const [n, xy] = tok.split('|'); const [x, y] = xy.split(',').map(Number); BOARD.track[+n] = {x, y}; }
+// Room doors 1-8: x,y of the number plaque (1-4 top edge, 5-8 bottom edge).
+const DOORS_TXT = `154,14 325,14 492,14 660,14 156,310 328,310 502,310 672,310`;
+BOARD.doors = DOORS_TXT.split(' ').map(s => { const [x, y] = s.split(',').map(Number); return {x, y}; });
+
+// ===== Rules engine: state in, legal actions and new state out. No DOM access. =====
+const APP_VERSION = '0.1';
+const CHANGELOG = [
+  {v: '0.1', date: '2026-11-01', items: [
+    'Full base game of The Bloody Inn: 70 travelers, 8 peasants, two seasons, short and long games.',
+    'Seats for 1 to 4 players: you against AI innkeepers (Easy, Normal, Hard), pass and play, or the solo game with its innkeeper ratings.',
+    'Variants: Unlimited Wealth and First Come, First Served.',
+    'Bribe, build, kill, bury and launder with a tap: legal targets light up, payments are suggested, and Undo works until a new card is drawn.',
+    'Move previews, rival intel, journal, statistics, a guided tour, keyboard shortcuts and an end-of-game reveal you can share.',
+    'Phone, fold and laptop layouts; sound and animations you can switch off; installs as an app and plays offline.',
+    'Real card and board art in your own copy; built-in rule tests (?test), self-play (?selfplay) and a board overlay (?debug).',
+  ]},
+];
+
+const Engine = (() => {
+  // ---------- helpers ----------
+  function rnd(S) {
+    let t = (S.rng = (S.rng + 0x6D2B79F5) >>> 0);
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  }
+  function shuffle(S, a) {
+    for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(rnd(S) * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; }
+    return a;
+  }
+  const pname = (S, p) => (S.seats[p] && S.seats[p].name) || `Player ${p + 1}`;
+  function log(S, text, kind = '', p = null, extra) {
+    if (S.sim) return;
+    S.log.push({round: S.round, p, text, kind, ...extra});
+  }
+  const rank = id => T(id).rank;
+  const color = id => T(id).color;
+  const isPolice = id => color(id) === 'grey';
+  const isPeasant = id => CARDS[id].type === 'peasant';
+  const canAnnex = id => !!T(id).annex;
+  const count = (P, eff) => P.annexes.reduce((n, a) => n + (a.id !== 'barn' && T(a.id).effect === eff ? 1 : 0), 0);
+  const colorAnnexes = (P, col) => P.annexes.filter(a => a.id !== 'barn' && color(a.id) === col).length;
+  const annexRank = a => a.id === 'barn' ? BARN_RANK : rank(a.id);
+  const annexFree = a => annexRank(a) - a.under.length;
+  const order = S => Array.from({length: S.n}, (_, i) => (S.first + i) % S.n);
+  const guestsInInn = S => S.rooms.filter(r => r.guest).length;
+  const openRooms = S => S.rooms.map((r, i) => r.key !== null ? i : -1).filter(i => i >= 0);
+  const wealth = P => P.cash + 10 * P.checks;
+  const buriedUnder = P => P.annexes.reduce((n, a) => n + a.under.length, 0);
+  const keysOf = (S, p) => S.rooms.filter(r => r.key === p).length;
+
+  function gain(S, p, amt) {
+    if (amt <= 0) return 0;
+    const P = S.players[p];
+    if (S.opts.unlimited) {
+      P.cash += amt;
+      while (P.cash > CASH_CAP) { P.cash -= CASH_CAP; P.checks += 4; }
+      return amt;
+    }
+    const got = Math.min(amt, CASH_CAP - P.cash);
+    P.cash += got;
+    if (got < amt) P.wasted = (P.wasted || 0) + (amt - got);
+    return got;
+  }
+  function payCash(S, p, amt) { const P = S.players[p]; const paid = Math.min(P.cash, amt); P.cash -= paid; return paid; }
+
+  // ---------- setup ----------
+  function newGame(o = {}) {
+    const seed = (o.seed ?? Math.floor(Math.random() * 2 ** 31)) >>> 0;
+    const seats = o.seats || [{name: 'You', type: 'human', level: 'normal'}, {name: 'Anna', type: 'ai', level: 'normal'},
+      {name: 'Madeline', type: 'ai', level: 'normal'}, {name: 'Sebastien', type: 'ai', level: 'normal'}];
+    const n = seats.length;
+    const S = {
+      v: 1, seed, rng: seed, n, seats: seats.map((s, i) => ({color: SEAT_COLORS[i], ...s})),
+      opts: {long: o.long !== false, unlimited: !!o.unlimited, fcfs: !!o.fcfs},
+      players: [], rooms: Array.from({length: 8}, () => ({key: null, rs: null, guest: null})),
+      entrance: [], exit: [], bistro: [], removed: [], box: [], first: 0, round: 1, empties: 0, season: 1, final: false,
+      queue: [], pending: null, active: null, turnNo: 0, actRound: 0, draws: 0, log: [], last: null, over: false, lost: false, result: null, sim: false,
+    };
+    const deck = shuffle(S, TRAVELER_IDS.slice());
+    S.removed = deck.splice(0, REMOVE[n][S.opts.long ? 'long' : 'short']);
+    S.entrance = deck;
+    const peas = PEASANT_IDS.slice();          // peasant1-4 and peasant5-8 are the two illustrations
+    for (let p = 0; p < n; p++) {
+      S.players.push({cash: START_CASH, checks: START_CHECKS, hand: [peas[p], peas[p + 4]], annexes: [{id: 'barn', under: []}], corpses: [], wasted: 0});
+    }
+    const spare = PEASANT_IDS.filter(id => !S.players.some(P => P.hand.includes(id)));
+    if (n === 1) S.bistro.push(spare.shift(), spare.shift());
+    S.box.push(...spare);
+    let r = 0;
+    for (let p = 0; p < n; p++) S.rooms[r++].key = p;
+    for (let k = 0; k < NEUTRAL_KEYS[n]; k++) S.rooms[r++].key = 'white';
+    S.first = Math.floor(rnd(S) * n);
+    log(S, `${pname(S, S.first)} is the greediest and starts. Round 1.`, 'round');
+    queueRound(S);
+    advance(S);
+    return S;
+  }
+
+  function queueRound(S) {
+    S.queue.push({k: 'welcome'});
+    for (let ar = 0; ar < 2; ar++) for (const p of order(S)) S.queue.push({k: 'turn', p, ar});
+    S.queue.push({k: 'police'}, {k: 'leave'});
+    for (const p of order(S)) S.queue.push({k: 'wages', p});
+    S.queue.push({k: 'roundEnd'});
+  }
+
+  // ---------- the task queue ----------
+  function advance(S) {
+    let guard = 0;
+    while (!S.pending && !S.over && S.queue.length) {
+      if (++guard > 5000) throw new Error('advance loop');
+      run(S, S.queue.shift());
+    }
+  }
+
+  function draw(S) {
+    const id = S.entrance.shift();
+    S.draws++;
+    if (!S.entrance.length) {
+      S.empties++;
+      if (S.empties === 1) {
+        S.entrance = shuffle(S, S.exit.splice(0));
+        S.season = 2;
+        log(S, 'The Entrance Stack is empty: the Exit Stack is shuffled into a new one. Second season.', 'season');
+        if (!S.entrance.length) { S.empties = 2; S.final = true; }
+      }
+      if (S.empties >= 2 && !S.final) S.final = true;
+      if (S.final) log(S, 'The Entrance Stack is empty for the second time: this is the final round.', 'season');
+    }
+    return id;
+  }
+
+  function lodge(S, id, room) {
+    const R = S.rooms[room];
+    R.guest = id;
+    log(S, `${T(id).name} takes room ${room + 1}.`, 'lodge', null, {room});
+    if (R.rs !== null) {
+      const got = gain(S, R.rs, rank(id));
+      if (rank(id)) log(S, `Room service: ${pname(S, R.rs)} earns ${got}F.`, 'money', R.rs);
+    }
+  }
+
+  function run(S, t) {
+    switch (t.k) {
+      case 'welcome': {
+        const free = openRooms(S).filter(i => !S.rooms[i].guest);
+        if (free.length && S.entrance.length) {
+          const id = draw(S);
+          S.queue.unshift({k: 'welcome'});
+          if (S.opts.fcfs || free.length === 1) lodge(S, id, free[0]);
+          else { S.pending = {t: 'lodge', p: S.first, card: id}; S.active = S.first; }
+          return;
+        }
+        if (S.final && guestsInInn(S) < S.n) {
+          for (const R of S.rooms) if (R.guest) { S.exit.push(R.guest); R.guest = null; }
+          log(S, 'Fewer travelers than players in the inn: the last round is not played.', 'season');
+          S.queue = [];
+          queueFinish(S);
+        }
+        return;
+      }
+      case 'turn': {
+        S.active = t.p; S.actRound = t.ar; S.turnNo++;
+        S.pending = {t: 'turn', p: t.p, ar: t.ar};
+        return;
+      }
+      case 'police': {
+        const cops = S.rooms.filter(R => R.guest && isPolice(R.guest));
+        if (!cops.length) return;
+        log(S, `The police investigate (${cops.map(R => T(R.guest).name).join(', ')}).`, 'police');
+        if (S.n === 1 && S.players[0].corpses.length) { lose(S, 'The police found an unburied corpse.'); return; }
+        const tasks = order(S).filter(p => S.players[p].corpses.length).map(p => ({k: 'grave', p, why: 'police'}));
+        S.queue.unshift(...tasks);
+        return;
+      }
+      case 'grave': return gravedigger(S, t.p, t.why);
+      case 'leave': {
+        for (let p = 0; p < S.n; p++) {
+          const occ = S.rooms.filter(R => R.key === p && R.guest).length, g = 2 * count(S.players[p], 'gardens');
+          const got = gain(S, p, occ + g);
+          if (occ + g) log(S, `${pname(S, p)} earns ${got}F (${occ} occupied room${occ === 1 ? '' : 's'}${g ? `, gardens +${g}` : ''}).`, 'money', p);
+        }
+        for (const R of S.rooms) if (R.guest) { S.exit.push(R.guest); R.guest = null; }
+        log(S, 'The travelers leave the inn.', 'leave');
+        return;
+      }
+      case 'wages': {
+        const P = S.players[t.p], due = Math.max(0, P.hand.length - count(P, 'distillery'));
+        if (!due) return;
+        if (P.cash >= due) { P.cash -= due; log(S, `${pname(S, t.p)} pays ${due}F in wages.`, 'wages', t.p); return; }
+        const paid = P.cash; P.cash = 0;
+        const k = due - paid;
+        log(S, `${pname(S, t.p)} can only pay ${paid}F in wages: ${k} accomplice${k === 1 ? '' : 's'} must go.`, 'wages', t.p);
+        if (k >= P.hand.length) { release(S, t.p, P.hand.slice()); return; }
+        S.pending = {t: 'release', p: t.p, k}; S.active = t.p;
+        return;
+      }
+      case 'roundEnd': {
+        if (S.final) { queueFinish(S); return; }
+        S.first = (S.first + 1) % S.n;
+        S.round++;
+        log(S, `Round ${S.round}. ${pname(S, S.first)} welcomes the travelers.`, 'round');
+        queueRound(S);
+        return;
+      }
+      case 'score': return score(S);
+    }
+  }
+
+  function queueFinish(S) {
+    S.phase = 'final';
+    if (S.n === 1 && S.players[0].corpses.length) { lose(S, 'An unburied corpse was found at the end of the game.'); return; }
+    S.queue.push(...order(S).filter(p => S.players[p].corpses.length).map(p => ({k: 'grave', p, why: 'end'})), {k: 'score'});
+  }
+
+  function lose(S, why) {
+    S.over = true; S.lost = true; S.pending = null; S.queue = [];
+    log(S, `You lose: ${why}`, 'end');
+    S.result = result(S);
+  }
+
+  // Gravedigger: 10F per unburied corpse, from a check or 10 cash each (player's choice); if both run out, all remaining cash.
+  function graveRange(P) {
+    const k = P.corpses.length, maxC = Math.min(P.checks, k);
+    // fewest checks: as many 10F units from cash as possible; any shortfall must use checks first
+    const minC = Math.min(maxC, Math.max(0, k - Math.floor(P.cash / 10)));
+    return [minC, maxC];
+  }
+  function gravedigger(S, p, why) {
+    const P = S.players[p];
+    if (!P.corpses.length) return;
+    const [lo, hi] = graveRange(P);
+    if (lo === hi) { payGrave(S, p, lo); return; }
+    S.pending = {t: 'grave', p, why, lo, hi}; S.active = p;
+  }
+  function payGrave(S, p, c) {
+    const P = S.players[p], k = P.corpses.length;
+    P.checks -= c;
+    const cash = payCash(S, p, (k - c) * 10);
+    log(S, `${pname(S, p)} pays the gravedigger for ${k} corpse${k === 1 ? '' : 's'}: ${[c ? `${c} check${c === 1 ? '' : 's'}` : '', cash ? `${cash}F` : ''].filter(Boolean).join(' and ') || 'nothing left to pay'}.`, 'police', p);
+    S.box.push(...P.corpses.splice(0));
+  }
+
+  function release(S, p, ids) {
+    const P = S.players[p];
+    for (const id of ids) {
+      P.hand.splice(P.hand.indexOf(id), 1);
+      if (isPeasant(id)) S.bistro.push(id); else S.exit.push(id);
+    }
+    log(S, `${pname(S, p)} lets go of ${ids.map(id => T(id).name).join(', ')}.`, 'wages', p);
+  }
+
+  function score(S) {
+    const bonus = [];
+    for (let p = 0; p < S.n; p++) {
+      const P = S.players[p], b = {};
+      const per = (eff, col) => { const c = count(P, eff); if (c) b[eff] = gain(S, p, 4 * c * S.exit.filter(id => color(id) === col).length); };
+      per('park', 'red'); per('grocery', 'blue'); per('bishopric', 'purple'); per('stables', 'green');
+      const gh = count(P, 'greenhouse');
+      if (gh) b.greenhouse = gain(S, p, 3 * gh * P.checks);
+      bonus.push(b);
+      const tot = Object.values(b).reduce((a, v) => a + v, 0);
+      if (tot) log(S, `${pname(S, p)} earns ${tot}F from end-of-game annexes.`, 'money', p);
+    }
+    S.bonus = bonus;
+    S.over = true; S.pending = null; S.phase = 'over';
+    S.result = result(S);
+    const w = S.result.rows.filter(r => r.rank === 1);
+    log(S, S.n === 1 ? `Final booty: ${S.result.rows[0].total}F, ${S.result.rating}.`
+      : `${w.map(r => r.name).join(' and ')} ${w.length > 1 ? 'share the victory' : 'wins'} with ${w[0].total}F.`, 'end');
+  }
+
+  function result(S) {
+    const rows = S.players.map((P, p) => ({p, name: pname(S, p), color: S.seats[p].color, cash: P.cash, checks: P.checks, total: wealth(P),
+      buried: buriedUnder(P), annexes: P.annexes.length - 1, corpses: P.corpses.length, hand: P.hand.length, bonus: (S.bonus && S.bonus[p]) || {}}));
+    for (const r of rows) r.rank = 1 + rows.filter(o => o.total > r.total || (o.total === r.total && o.buried > r.buried)).length;
+    const out = {rows, over: S.over, lost: S.lost, round: S.round};
+    if (S.n === 1) out.rating = S.lost ? 'arrested' : SOLO_RATINGS.find(([m]) => rows[0].total >= m)[1];
+    return out;
+  }
+
+  // ---------- costs and options ----------
+  function cost(S, p, m) {
+    const P = S.players[p];
+    switch (m.t) {
+      case 'bribe': return Math.max(0, m.rooms.reduce((n, i) => n + rank(S.rooms[i].guest), 0) - count(P, 'parlor'));
+      case 'build': return Math.max(0, rank(m.card) - count(P, 'workshop'));
+      case 'kill': return m.rooms.reduce((n, i) => n + rank(S.rooms[i].guest), 0);
+      case 'bury': return Math.max(0, m.items.reduce((n, it) => n + rank(it.id), 0) - count(P, 'cellar'));
+      default: return 0;
+    }
+  }
+  const actionOf = m => ({bribe: 'bribe', peasants: 'bribe', build: 'build', kill: 'kill', killPeasant: 'kill', bury: 'bury'}[m.t]);
+  // Where a paid card goes: back to hand (aptitude, or any card for Bury with a Chapel), bistro (peasants) or the Exit Stack.
+  function payDest(S, p, action, id) {
+    if (action === 'bury' && count(S.players[p], 'chapel')) return 'hand';
+    if (APTITUDE[color(id)] === action) return 'hand';
+    return isPeasant(id) ? 'bistro' : 'exit';
+  }
+
+  // Legal targets for the UI and the AI: what the actor may start this turn.
+  function options(S, p) {
+    const P = S.players[p], hand = P.hand.length;
+    const occ = S.rooms.map((R, i) => R.guest ? i : -1).filter(i => i >= 0);
+    const o = {bribe: [], kill: [], build: [], bury: [], peasants: 0, killPeasant: false,
+      multiBribe: count(P, 'store') > 0, multiKill: count(P, 'butcher') > 0, multiBury: count(P, 'crypt') > 0};
+    for (const i of occ) {
+      if (cost(S, p, {t: 'bribe', rooms: [i]}) <= hand) o.bribe.push(i);
+      if (cost(S, p, {t: 'kill', rooms: [i]}) <= hand) o.kill.push(i);
+    }
+    for (const id of P.hand) if (canAnnex(id) && cost(S, p, {t: 'build', card: id}) <= hand - 1) o.build.push(id);
+    const slots = S.players.reduce((n, Q) => n + Q.annexes.reduce((m, a) => m + Math.max(0, annexFree(a)), 0), 0);
+    if (slots) for (const id of P.corpses) if (cost(S, p, {t: 'bury', items: [{id}]}) <= hand) o.bury.push(id);
+    o.peasants = Math.min(S.bistro.length, count(P, 'brewery') ? 4 : 2);
+    o.killPeasant = S.bistro.length > 0;
+    return o;
+  }
+
+  function annexTargets(S, extra = []) {
+    // [{p, i, free}] with free slots, accounting for corpses already assigned in this action
+    const out = [];
+    S.players.forEach((Q, q) => Q.annexes.forEach((a, i) => {
+      const used = extra.filter(e => e.owner === q && e.annex === i).length;
+      if (annexFree(a) - used > 0) out.push({p: q, i, free: annexFree(a) - used});
+    }));
+    return out;
+  }
+
+  // ---------- validation ----------
+  function check(S, m) {
+    const pd = S.pending;
+    if (S.over) return 'The game is over.';
+    if (!pd) return 'Nothing to decide.';
+    const p = pd.p, P = S.players[p];
+    const uniq = a => new Set(a).size === a.length;
+    switch (pd.t) {
+      case 'lodge':
+        if (m.t !== 'lodge') return 'Choose a room for the traveler.';
+        if (!S.rooms[m.room] || S.rooms[m.room].key === null || S.rooms[m.room].guest) return 'That room is not open and free.';
+        return '';
+      case 'rs': {
+        const R = S.rooms[m.room];
+        if (m.t !== 'rs' || !R || R.key === null || R.rs !== null) return 'Choose a door with a Key and no Room Service token.';
+        return '';
+      }
+      case 'monk':
+        if (m.t !== 'monk' || !S.rooms[m.room] || S.rooms[m.room].key !== 'white') return 'Choose a room with a white Key.';
+        return '';
+      case 'grave':
+        if (m.t !== 'grave' || !(m.checks >= pd.lo && m.checks <= pd.hi)) return `Use between ${pd.lo} and ${pd.hi} checks.`;
+        return '';
+      case 'release':
+        if (m.t !== 'release' || m.ids.length !== pd.k || !uniq(m.ids) || !m.ids.every(id => P.hand.includes(id))) return `Choose ${pd.k} accomplice${pd.k === 1 ? '' : 's'} from your hand.`;
+        return '';
+      case 'turn': break;
+      default: return 'Unknown decision.';
+    }
+    if (m.t === 'pass') {
+      const k = m.launder | 0;
+      if (k > 0 && P.cash < 10 * k) return 'Not enough cash for that many checks.';
+      if (k < 0 && P.checks < -k) return 'Not enough checks.';
+      return '';
+    }
+    const pay = m.pay || [];
+    if (!uniq(pay) || !pay.every(id => P.hand.includes(id))) return 'Pay with distinct cards from your hand.';
+    switch (m.t) {
+      case 'bribe': case 'kill': {
+        if (!m.rooms || !m.rooms.length || !uniq(m.rooms)) return 'Choose a traveler.';
+        if (!m.rooms.every(i => S.rooms[i] && S.rooms[i].guest)) return 'That room is empty.';
+        const multi = count(P, m.t === 'bribe' ? 'store' : 'butcher') > 0;
+        if (m.rooms.length > 1 && !multi) return `Only one traveler per action without the ${m.t === 'bribe' ? 'Store' : 'Butcher\u2019s Shop'}.`;
+        break;
+      }
+      case 'peasants': {
+        const max = count(P, 'brewery') ? 4 : 2;
+        if (!(m.n >= 1 && m.n <= Math.min(max, S.bistro.length))) return `Bribe 1 to ${Math.min(max, S.bistro.length)} peasants.`;
+        break;
+      }
+      case 'killPeasant': if (!S.bistro.length) return 'The bistro is empty.'; break;
+      case 'build':
+        if (!P.hand.includes(m.card) || !canAnnex(m.card)) return 'Choose a card with an annex from your hand.';
+        if (pay.includes(m.card)) return 'The annex card cannot pay for itself.';
+        break;
+      case 'bury': {
+        if (!m.items || !m.items.length) return 'Choose a corpse.';
+        if (m.items.length > 1 && !count(P, 'crypt')) return 'Only one corpse per action without the Crypt.';
+        if (!uniq(m.items.map(it => it.id)) || !m.items.every(it => P.corpses.includes(it.id))) return 'Choose your own unburied corpses.';
+        const used = [];
+        for (const it of m.items) {
+          const Q = S.players[it.owner], a = Q && Q.annexes[it.annex];
+          if (!a) return 'Choose an annex.';
+          if (annexFree(a) - used.filter(u => u.owner === it.owner && u.annex === it.annex).length <= 0) return 'That annex is full.';
+          used.push(it);
+        }
+        break;
+      }
+      default: return 'Unknown action.';
+    }
+    const c = cost(S, p, m);
+    if (pay.length !== c) return `This costs ${c} accomplice${c === 1 ? '' : 's'}; ${pay.length} chosen.`;
+    return '';
+  }
+
+  // ---------- applying a decision ----------
+  function apply(S, m) {
+    const err = check(S, m);
+    if (err) throw new Error(err);
+    const pd = S.pending, p = pd.p, P = S.players[p];
+    S.pending = null;
+    S.last = {p, m: structuredClone(m), round: S.round};
+    switch (pd.t) {
+      case 'lodge': lodge(S, pd.card, m.room); break;
+      case 'rs':
+        S.rooms[m.room].rs = p;
+        log(S, `${pname(S, p)} puts a Room Service token on room ${m.room + 1}.`, 'build', p, {room: m.room});
+        break;
+      case 'monk':
+        S.rooms[m.room].key = p;
+        log(S, `${pname(S, p)} claims room ${m.room + 1}.`, 'build', p, {room: m.room});
+        break;
+      case 'grave': payGrave(S, p, m.checks); break;
+      case 'release': release(S, p, m.ids); break;
+      case 'turn': action(S, p, m); break;
+    }
+    advance(S);
+    return S;
+  }
+
+  function payWith(S, p, action, pay) {
+    const P = S.players[p], back = [], gone = [];
+    for (const id of pay) {
+      const d = payDest(S, p, action, id);
+      P.hand.splice(P.hand.indexOf(id), 1);
+      if (d === 'hand') back.push(id); else { (d === 'bistro' ? S.bistro : S.exit).push(id); gone.push(id); }
+    }
+    P.hand.push(...back);
+    return {back, gone};
+  }
+  const names = ids => ids.map(id => T(id).name).join(', ');
+  const payText = ({back, gone}) => [gone.length ? `pays ${names(gone)}` : '', back.length ? `keeps ${names(back)}` : ''].filter(Boolean).join(', ');
+
+  function action(S, p, m) {
+    const P = S.players[p], who = pname(S, p);
+    if (m.t === 'pass') {
+      const k = m.launder | 0;
+      if (k > 0) { P.cash -= 10 * k; P.checks += k; log(S, `${who} passes and launders ${10 * k}F into ${k} check${k === 1 ? '' : 's'}.`, 'pass', p); }
+      else if (k < 0) { P.checks += k; const got = gain(S, p, -10 * k); log(S, `${who} passes and cashes ${-k} check${k === -1 ? '' : 's'} for ${got}F.`, 'pass', p); }
+      else log(S, `${who} passes.`, 'pass', p);
+      return;
+    }
+    const act = actionOf(m), paid = payWith(S, p, act, m.pay || []), pt = payText(paid);
+    const suffix = pt ? ` (${pt})` : '';
+    switch (m.t) {
+      case 'bribe': {
+        const ids = m.rooms.map(i => { const id = S.rooms[i].guest; S.rooms[i].guest = null; return id; });
+        P.hand.push(...ids);
+        log(S, `${who} bribes ${names(ids)}${suffix}.`, 'bribe', p, {rooms: m.rooms});
+        break;
+      }
+      case 'peasants': {
+        const ids = S.bistro.splice(0, m.n);
+        P.hand.push(...ids);
+        log(S, `${who} bribes ${m.n} peasant${m.n === 1 ? '' : 's'} from the bistro.`, 'bribe', p);
+        break;
+      }
+      case 'kill': {
+        const ids = m.rooms.map(i => { const id = S.rooms[i].guest; S.rooms[i].guest = null; return id; });
+        P.corpses.push(...ids);
+        log(S, `${who} kills ${names(ids)}${suffix}.`, 'kill', p, {rooms: m.rooms});
+        break;
+      }
+      case 'killPeasant': {
+        const id = S.bistro.shift();
+        P.corpses.push(id);
+        log(S, `${who} kills a peasant in the bistro.`, 'kill', p);
+        break;
+      }
+      case 'bury': {
+        for (const it of m.items) {
+          P.corpses.splice(P.corpses.indexOf(it.id), 1);
+          const a = S.players[it.owner].annexes[it.annex];
+          a.under.push(it.id);
+          const money = T(it.id).money, where = a.id === 'barn' ? 'barn' : T(a.id).annex;
+          if (it.owner === p) {
+            const got = gain(S, p, money);
+            log(S, `${who} buries ${T(it.id).name} under ${it.owner === p ? 'their' : ''} ${where} and takes ${got}F${suffix}.`, 'bury', p);
+          } else {
+            const g1 = gain(S, p, money / 2), g2 = gain(S, it.owner, money / 2);
+            log(S, `${who} buries ${T(it.id).name} under ${pname(S, it.owner)}\u2019s ${where}: ${g1}F each way (${g2}F to ${pname(S, it.owner)})${suffix}.`, 'bury', p);
+          }
+        }
+        break;
+      }
+      case 'build': {
+        P.hand.splice(P.hand.indexOf(m.card), 1);
+        P.annexes.push({id: m.card, under: []});
+        log(S, `${who} builds the ${T(m.card).annex}${suffix}.`, 'build', p, {card: m.card});
+        built(S, p, m.card);
+        break;
+      }
+    }
+  }
+
+  function built(S, p, id) {
+    const P = S.players[p], eff = T(id).effect, earn = (amt, why) => { const got = gain(S, p, amt); if (amt) log(S, `${pname(S, p)} earns ${got}F${why ? ` (${why})` : ''}.`, 'money', p); };
+    switch (eff) {
+      case 'kiosk': earn(colorAnnexes(P, 'blue'), 'blue annexes'); break;
+      case 'vegetable': earn(colorAnnexes(P, 'red'), 'red annexes'); break;
+      case 'altar': earn(colorAnnexes(P, 'purple'), 'purple annexes'); break;
+      case 'chandelier': earn(4); break;
+      case 'bed': earn(6); break;
+      case 'dining': earn(9); break;
+      case 'detached': earn(18); break;
+      case 'park': case 'grocery': case 'bishopric': case 'stables': earn(4); break;
+      case 'roomservice': {
+        const doors = S.rooms.map((R, i) => R.key !== null && R.rs === null ? i : -1).filter(i => i >= 0);
+        if (doors.length === 1) { S.rooms[doors[0]].rs = p; log(S, `${pname(S, p)} puts a Room Service token on room ${doors[0] + 1}.`, 'build', p); }
+        else if (doors.length) { S.pending = {t: 'rs', p}; S.active = p; }
+        break;
+      }
+      case 'room': {
+        const w = S.rooms.map((R, i) => R.key === 'white' ? i : -1).filter(i => i >= 0);
+        if (w.length === 1) { S.rooms[w[0]].key = p; log(S, `${pname(S, p)} claims room ${w[0] + 1}.`, 'build', p); }
+        else if (w.length) { S.pending = {t: 'monk', p}; S.active = p; }
+        break;
+      }
+    }
+  }
+
+  // Cheapest payment: cards that come back first, then peasants (back to the bistro), then the least useful.
+  function keepValue(S, p, id) {
+    const t = T(id);
+    let v = 1 + (APTITUDE[t.color] ? 1.5 : 0);
+    if (t.annex) v += 1.5 + t.rank * (S.season === 2 ? 0.8 : 1.4);
+    if (t.effect === 'detached' || t.effect === 'dining') v += 3;
+    return v;
+  }
+  function suggestPay(S, p, m) {
+    const P = S.players[p], act = actionOf(m), need = cost(S, p, m);
+    const pool = P.hand.filter(id => id !== m.card);
+    const score = id => payDest(S, p, act, id) === 'hand' ? -10 + rank(id) * 0.01 : isPeasant(id) ? 0 : keepValue(S, p, id);
+    pool.sort((a, b) => score(a) - score(b) || (a < b ? -1 : 1));
+    return pool.length >= need ? pool.slice(0, need) : null;
+  }
+
+  // Preview of a move for the UI: money and cards that change, without touching S.
+  function preview(S, m) {
+    if (check(S, m)) return null;
+    const X = structuredClone(S); X.sim = true;
+    const before = X.players.map(P => ({...P, hand: P.hand.slice()}));
+    try { apply(X, m); } catch { return null; }
+    return X.players.map((P, i) => ({p: i, cash: P.cash - before[i].cash, checks: P.checks - before[i].checks, hand: P.hand.length - before[i].hand.length}));
+  }
+
+  return {newGame, apply, check, advance, options, cost, suggestPay, payDest, annexTargets, preview, result, shuffle, rnd,
+    count, colorAnnexes, annexRank, annexFree, rank, color, isPolice, isPeasant, canAnnex, guestsInInn, openRooms, wealth, buriedUnder, keysOf,
+    actionOf, pname, order, graveRange, keepValue};
+})();
+
+// ===== AI innkeepers: same engine, heuristic evaluation. Normal is deterministic for a given state. =====
+const AI = (() => {
+  const E = Engine;
+  const clone = S => { const X = structuredClone(S); X.sim = true; return X; };
+
+  function roundsLeft(S) {
+    const open = Math.max(1, E.openRooms(S).length);
+    const later = S.season === 1 ? S.exit.length + E.guestsInInn(S) : 0;
+    return Math.max(0, (S.entrance.length + later) / open);
+  }
+
+  const PERSIST = {workshop: 1.6, parlor: 1.6, cellar: 1.6, store: 1.1, butcher: 1.1, crypt: 1, chapel: 1, brewery: .5, distillery: 1, gardens: 2};
+  function annexWorth(S, p, id, R) {
+    const t = T(id), P = S.players[p], w = Math.min(R, 4);
+    let v = t.rank * 4.5 * Math.min(1, R / 2);                        // burial slots
+    switch (t.effect) {
+      case 'chandelier': v += 4; break;
+      case 'bed': v += 6; break;
+      case 'dining': v += 9; break;
+      case 'detached': v += 18; break;
+      case 'kiosk': v += E.colorAnnexes(P, 'blue') + 1; break;
+      case 'vegetable': v += E.colorAnnexes(P, 'red') + 1; break;
+      case 'altar': v += E.colorAnnexes(P, 'purple') + 1; break;
+      case 'park': case 'grocery': case 'bishopric': case 'stables': v += 4 + endBonus(S, t.effect, R); break;
+      case 'greenhouse': v += 3 * (P.checks + R * .6); break;
+      case 'roomservice': v += 1.4 * w; break;
+      case 'room': v += S.rooms.some(r => r.key === 'white') ? .9 * w : 0; break;
+      default: v += (PERSIST[t.effect] || 0) * w;
+    }
+    return v;
+  }
+  const END_COL = {park: 'red', grocery: 'blue', bishopric: 'purple', stables: 'green'};
+  function endBonus(S, eff, R) {
+    const col = END_COL[eff], now = S.exit.filter(id => E.color(id) === col).length;
+    return 4 * (now + R * E.openRooms(S).length * .12);
+  }
+
+  // Estimated final money of seat p.
+  function estimate(S, p, R) {
+    const P = S.players[p];
+    if (S.over) return E.wealth(P);
+    let v = P.cash + 10 * P.checks - (S.opts.unlimited ? 0 : .5 * Math.max(0, P.cash - 28));
+    const cops = S.rooms.some(r => r.guest && E.isPolice(r.guest)) && S.queue.some(t => t.k === 'police');
+    const myTurns = S.queue.filter(t => t.k === 'turn' && t.p === p).length + (S.pending && S.pending.t === 'turn' && S.pending.p === p ? 1 : 0);
+    const free = P.annexes.reduce((n, a) => n + Math.max(0, E.annexFree(a)), 0);
+    const anyFree = S.players.some(Q => Q.annexes.some(a => E.annexFree(a) > 0));
+    let used = 0, turnsLeft = myTurns * (E.count(P, 'crypt') ? 3 : 1), handLeft = P.hand.length;
+    const lastChance = !myTurns && (S.phase === 'final' || (S.final && !S.queue.some(t => t.k === 'turn')));
+    for (const id of P.corpses.slice().sort((a, b) => T(b).money - T(a).money)) {
+      const t = T(id), c = Math.max(0, t.rank - E.count(P, 'cellar')), own = used < free, slot = own || anyFree;
+      const money = t.money * (own ? 1 : .5);
+      let cv;
+      if (cops || lastChance) {
+        // the investigation (or the end) comes before the next round: bury now or pay 10F
+        if (slot && turnsLeft > 0 && handLeft >= c) { cv = money - c * 1.2 - 1; turnsLeft--; handLeft -= c; if (own) used++; }
+        else cv = -10;
+      } else {
+        cv = (slot ? money * .8 : money * .2) - c * 1.2 - 3;
+        if (own) used++;
+      }
+      v += cv;
+    }
+    v += Math.max(0, free - used) * 4.5 * Math.min(1, R / 2);
+    for (const a of P.annexes) {
+      if (a.id === 'barn') continue;
+      const t = T(a.id);
+      if (END_COL[t.effect]) v += endBonus(S, t.effect, R);
+      else if (t.effect === 'greenhouse') v += 3 * (P.checks + R * .6);
+      else if (t.effect === 'roomservice') v += 1.4 * Math.min(R, 4);
+      else v += (PERSIST[t.effect] || 0) * Math.min(R, 4);
+    }
+    v += S.rooms.filter(r => r.key === p).length * Math.min(R, 6) * .9;
+    const wages = Math.min(R, 2.5);
+    for (const id of P.hand) {
+      const t = T(id);
+      let h = 1.2 + (APTITUDE[t.color] ? 1.8 : 0);
+      if (t.annex) h += annexWorth(S, p, id, R) * .45;
+      v += h - wages;
+    }
+    return v;
+  }
+
+  function value(S, p) {
+    const R = roundsLeft(S), mine = estimate(S, p, R);
+    if (S.n === 1) return mine;
+    let best = -1e9;
+    for (let q = 0; q < S.n; q++) if (q !== p) best = Math.max(best, estimate(S, q, R));
+    return mine - .4 * best;
+  }
+
+  // ---------- candidate moves for the turn decision ----------
+  function withPay(S, p, m) { const pay = E.suggestPay(S, p, m); return pay ? {...m, pay} : null; }
+  function candidates(S, p) {
+    const P = S.players[p], o = E.options(S, p), out = [{t: 'pass', launder: 0}];
+    const reserve = P.hand.length + 3, k = Math.floor((P.cash - reserve) / 10);
+    if (k > 0) out.push({t: 'pass', launder: k});
+    if (P.checks && P.cash < P.hand.length) out.push({t: 'pass', launder: -1});
+    for (const i of o.bribe) out.push(withPay(S, p, {t: 'bribe', rooms: [i]}));
+    for (const i of o.kill) out.push(withPay(S, p, {t: 'kill', rooms: [i]}));
+    if (o.multiBribe && o.bribe.length > 1) out.push(withPay(S, p, {t: 'bribe', rooms: o.bribe.slice().sort((a, b) => E.rank(S.rooms[b].guest) - E.rank(S.rooms[a].guest)).slice(0, 2)}));
+    if (o.multiKill && o.kill.length > 1) {
+      const cheap = o.kill.slice().sort((a, b) => E.rank(S.rooms[a].guest) - E.rank(S.rooms[b].guest));
+      out.push(withPay(S, p, {t: 'kill', rooms: cheap.slice(0, 2)}), withPay(S, p, {t: 'kill', rooms: cheap.slice(0, 3)}));
+    }
+    for (let n = 1; n <= o.peasants; n++) out.push({t: 'peasants', n, pay: []});
+    if (o.killPeasant) out.push({t: 'killPeasant', pay: []});
+    for (const id of o.build) out.push(withPay(S, p, {t: 'build', card: id}));
+    for (const id of o.bury) {
+      const targets = E.annexTargets(S);
+      const own = targets.filter(a => a.p === p), other = targets.filter(a => a.p !== p).slice(0, 3);
+      for (const a of [...own, ...other]) out.push(withPay(S, p, {t: 'bury', items: [{id, owner: a.p, annex: a.i}]}));
+    }
+    if (o.multiBury && P.corpses.length > 1) {
+      const items = [], used = [];
+      for (const id of P.corpses) {
+        const a = E.annexTargets(S, used).find(x => x.p === p) || E.annexTargets(S, used)[0];
+        if (!a) break;
+        const it = {id, owner: a.p, annex: a.i}; items.push(it); used.push(it);
+      }
+      if (items.length > 1) out.push(withPay(S, p, {t: 'bury', items}));
+    }
+    return out.filter(m => m && !E.check(S, m));
+  }
+
+  // ---------- small decisions ----------
+  function minor(S) {
+    const pd = S.pending, p = pd.p, P = S.players[p];
+    switch (pd.t) {
+      case 'lodge': {
+        const id = pd.card, r = E.rank(id);
+        let best = -1, bs = -1e9;
+        S.rooms.forEach((R, i) => {
+          if (R.key === null || R.guest) return;
+          let s = 0;
+          if (R.rs === p) s += r * 2; else if (R.rs !== null) s -= r;
+          if (R.key === p) s += .5;
+          if (s > bs) { bs = s; best = i; }
+        });
+        return {t: 'lodge', room: best};
+      }
+      case 'rs': {
+        const doors = S.rooms.map((R, i) => R.key !== null && R.rs === null ? i : -1).filter(i => i >= 0);
+        return {t: 'rs', room: doors.find(i => S.rooms[i].key === p) ?? doors[0]};
+      }
+      case 'monk': {
+        const w = S.rooms.map((R, i) => R.key === 'white' ? i : -1).filter(i => i >= 0);
+        return {t: 'monk', room: w.find(i => S.rooms[i].guest) ?? w[0]};
+      }
+      case 'grave': return {t: 'grave', checks: pd.lo};
+      case 'release': {
+        const h = P.hand.slice().sort((a, b) => (E.isPeasant(a) ? -1 : E.keepValue(S, p, a)) - (E.isPeasant(b) ? -1 : E.keepValue(S, p, b)) || (a < b ? -1 : 1));
+        return {t: 'release', ids: h.slice(0, pd.k)};
+      }
+    }
+    return null;
+  }
+
+  function settle(X, p) {
+    // resolve p's own follow-up decisions (Room Service, Monk) so the evaluation sees the result
+    let g = 0;
+    while (X.pending && X.pending.p === p && X.pending.t !== 'turn' && X.pending.t !== 'lodge' && g++ < 5) E.apply(X, minor(X));
+  }
+  function scoreMove(S, p, m) {
+    const X = clone(S);
+    E.apply(X, m);
+    settle(X, p);
+    return value(X, p);
+  }
+
+  function normal(S) {
+    const p = S.pending.p, cs = candidates(S, p);
+    let best = cs[0], bs = -1e9;
+    for (const m of cs) { const s = scoreMove(S, p, m); if (s > bs + 1e-9) { bs = s; best = m; } }
+    return best;
+  }
+
+  function determinize(S, seed) {
+    // hide what the AI cannot know: the entrance below its face-up top card, mixed with the cards removed at setup
+    const X = clone(S);
+    X.rng = seed >>> 0;
+    if (X.entrance.length > 1) {
+      const pool = E.shuffle(X, X.entrance.slice(1).concat(X.removed));
+      X.entrance = [X.entrance[0], ...pool.slice(0, X.entrance.length - 1)];
+      X.removed = pool.slice(X.entrance.length - 1);
+    }
+    return X;
+  }
+  function playout(X, p, start) {
+    let g = 0;
+    while (!X.over && X.pending && X.round === start && g++ < 80) {
+      const m = X.pending.t === 'turn' ? normal(X) : minor(X);
+      E.apply(X, m);
+    }
+    return value(X, p);
+  }
+  function hard(S) {
+    const p = S.pending.p, cs = candidates(S, p);
+    const ranked = cs.map(m => [m, scoreMove(S, p, m)]).sort((a, b) => b[1] - a[1]).slice(0, 8);
+    let best = ranked[0][0], bs = -1e9;
+    for (const [m, s0] of ranked) {
+      let tot = 0;
+      for (let k = 0; k < 2; k++) {
+        const X = determinize(S, S.seed * 31 + S.turnNo * 7 + k);
+        E.apply(X, m); settle(X, p);
+        tot += playout(X, p, S.round);
+      }
+      const s = tot / 2 + s0 * .25;
+      if (s > bs) { bs = s; best = m; }
+    }
+    return best;
+  }
+  function easy(S) {
+    const p = S.pending.p, cs = candidates(S, p);
+    const X = {rng: (S.seed ^ (S.turnNo * 2654435761)) >>> 0};
+    const scored = cs.map(m => [m, scoreMove(S, p, m) + (E.rnd(X) - .5) * 12]).sort((a, b) => b[1] - a[1]);
+    return scored[Math.floor(E.rnd(X) * Math.min(3, scored.length))][0];
+  }
+
+  function decide(S, level) {
+    if (!S.pending) return null;
+    if (S.pending.t !== 'turn') return minor(S);
+    level = level || (S.seats[S.pending.p] || {}).level || 'normal';
+    return level === 'hard' ? hard(S) : level === 'easy' ? easy(S) : normal(S);
+  }
+
+  // Non-invasive hint about a rival's likely plan: what the Normal AI would do in its place right now.
+  function intel(S, q) {
+    const P = S.players[q], notes = [];
+    const cops = S.rooms.some(r => r.guest && E.isPolice(r.guest));
+    if (P.corpses.length) notes.push(`${P.corpses.length} unburied corpse${P.corpses.length === 1 ? '' : 's'}${cops ? ' and the police are in the inn' : ''}`);
+    const free = P.annexes.reduce((n, a) => n + Math.max(0, E.annexFree(a)), 0);
+    if (free) notes.push(`${free} free burial slot${free === 1 ? '' : 's'}`);
+    const kill = P.hand.filter(id => E.color(id) === 'grey').length, bury = P.hand.filter(id => E.color(id) === 'purple').length;
+    if (kill) notes.push(`${kill} police accomplice${kill === 1 ? '' : 's'} (cheap kills)`);
+    if (bury) notes.push(`${bury} religious accomplice${bury === 1 ? '' : 's'} (cheap burials)`);
+    const ends = P.annexes.filter(a => a.id !== 'barn' && END_COL[T(a.id).effect]).map(a => T(a.id).annex);
+    if (ends.length) notes.push(`scores at the end with ${ends.join(', ')}`);
+    return notes;
+  }
+
+  return {decide, normal, hard, easy, minor, candidates, value, estimate, intel, roundsLeft};
+})();
+
+// ===== Rule tests (?test). Every rules clarification from the owner is a test here. =====
+const Tests = (() => {
+  const E = Engine;
+  const seatsN = n => Array.from({length: n}, (_, i) => ({name: 'P' + (i + 1), type: i ? 'ai' : 'human', level: 'normal'}));
+  // A night-phase state for seat 0 with an empty inn and no queued tasks.
+  function fresh(n = 2, opts = {}) {
+    const S = E.newGame({seed: 7, seats: seatsN(n), ...opts});
+    S.queue = []; S.pending = {t: 'turn', p: 0, ar: 0}; S.active = 0; S.first = 0;
+    for (const R of S.rooms) R.guest = null;
+    S.log = [];
+    return S;
+  }
+  const put = (S, room, id) => { S.rooms[room].guest = id; };
+  const give = (S, p, ...ids) => S.players[p].hand.push(...ids);
+  const build = (S, p, id) => S.players[p].annexes.push({id, under: []});
+  const turn = (S, p = 0) => { S.pending = {t: 'turn', p, ar: 0}; };
+  const throws = f => { try { f(); return false; } catch { return true; } };
+
+  const list = [];
+  const t = (name, fn) => list.push({name, fn});
+
+  t('CHANGELOG is newest first (major, then minor)', () => {
+    const num = v => v.split('.').map(Number);
+    for (let i = 1; i < CHANGELOG.length; i++) {
+      const a = num(CHANGELOG[i - 1].v), b = num(CHANGELOG[i].v);
+      if (!(a[0] > b[0] || (a[0] === b[0] && (a[1] || 0) > (b[1] || 0)) || (a[0] === b[0] && a[1] === b[1] && (a[2] || 0) > (b[2] || 0)))) return 'out of order at ' + CHANGELOG[i].v;
+    }
+    return CHANGELOG[0].v === APP_VERSION || 'first entry is not APP_VERSION';
+  });
+  t('70 travelers in 5 types of 14 (ranks 4/4/3/3), 8 peasants', () => {
+    if (TRAVELER_IDS.length !== 70 || PEASANT_IDS.length !== 8) return 'counts';
+    for (const c of ['blue', 'red', 'purple', 'green', 'grey']) {
+      const ids = TRAVELER_IDS.filter(id => T(id).color === c), r = k => ids.filter(id => T(id).rank === k).length;
+      if (ids.length !== 14 || r(0) !== 4 || r(1) !== 4 || r(2) !== 3 || r(3) !== 3) return c;
+    }
+    return TRAVELER_IDS.every(id => T(id).money === [8, 12, 18, 26][T(id).rank]) || 'pocket money by rank';
+  });
+  t('Police and peasants have no annex; every other traveler has one', () =>
+    TRAVELER_IDS.every(id => !!T(id).annex === (T(id).color !== 'grey')) && PEASANT_IDS.every(id => !T(id).annex));
+  t('Setup removes cards per the player aid table (long and short)', () => {
+    for (const n of [1, 2, 3, 4]) for (const long of [true, false]) {
+      const S = E.newGame({seed: 3, seats: seatsN(n), long});
+      const inPlay = S.entrance.length + S.rooms.filter(r => r.guest).length + S.exit.length + (S.pending && S.pending.card ? 1 : 0);
+      if (inPlay !== 70 - REMOVE[n][long ? 'long' : 'short'] || S.removed.length !== REMOVE[n][long ? 'long' : 'short']) return `${n}p ${long}`;
+    }
+    return true;
+  });
+  t('Setup: 2 peasants, 5F and one 10F check each; open rooms = players + 3 (4 neutral with 4 players)', () => {
+    for (const n of [2, 3, 4]) {
+      const S = E.newGame({seed: 3, seats: seatsN(n)});
+      if (!S.players.every(P => P.hand.filter(E.isPeasant).length === 2 && P.cash === 5 && P.checks === 1)) return 'hands ' + n;
+      if (E.openRooms(S).length !== n + NEUTRAL_KEYS[n] || S.rooms.filter(r => r.key === 'white').length !== NEUTRAL_KEYS[n]) return 'rooms ' + n;
+    }
+    const s = E.newGame({seed: 3, seats: seatsN(1)});
+    return (s.bistro.length === 2 && E.openRooms(s).length === 4) || 'solo bistro and rooms';
+  });
+  t('Welcome: the first player fills every open room; only one free room is filled automatically', () => {
+    const S = E.newGame({seed: 11, seats: seatsN(3)});
+    let g = 0;
+    while (S.pending && S.pending.t === 'lodge' && g++ < 20) E.apply(S, AI.minor(S));
+    return (S.pending.t === 'turn' && E.guestsInInn(S) === 6) || `inn ${E.guestsInInn(S)}`;
+  });
+  t('Room Service: the bank pays the token owner the guest\u2019s rank on lodging (any Key, even white)', () => {
+    const S = fresh(2, {fcfs: true});
+    S.rooms[2].rs = 1;                                    // room 3 has a white key
+    S.players[1].cash = 5;
+    S.entrance = ['major1', 'baron1', 'count1', 'newsboy1', 'monk1', 'chief1'];
+    S.queue = [{k: 'welcome'}]; S.pending = null;
+    E.advance(S);
+    return (S.rooms[2].guest === 'count1' && S.players[1].cash === 7) || `cash ${S.players[1].cash}`;
+  });
+  t('First Come, First Served: travelers go to the open rooms in door order', () => {
+    const S = fresh(2, {fcfs: true});
+    S.entrance = ['major1', 'baron1', 'count1', 'newsboy1', 'monk1', 'chief1'];
+    S.queue = [{k: 'welcome'}]; S.pending = null;
+    E.advance(S);
+    return ['major1', 'baron1', 'count1', 'newsboy1', 'monk1'].every((id, i) => S.rooms[i].guest === id) || 'order';
+  });
+  t('Bribe: pay rank cards; aptitude cards return, peasants go to the bistro, others to the Exit Stack', () => {
+    const S = fresh(); const P = S.players[0];
+    put(S, 0, 'count1'); P.hand = ['peasant1', 'newsboy1', 'baron1'];
+    if (!throws(() => E.apply(S, {t: 'bribe', rooms: [0], pay: ['peasant1']}))) return 'accepted too few';
+    E.apply(S, {t: 'bribe', rooms: [0], pay: ['peasant1', 'newsboy1']});
+    return (P.hand.includes('newsboy1') && P.hand.includes('count1') && S.bistro.includes('peasant1') && !S.rooms[0].guest) || 'result';
+  });
+  t('Bribe peasants: 1 or 2 for free; up to 4 with the Brewery; never mixed with a traveler', () => {
+    const S = fresh(); S.bistro = ['peasant3', 'peasant4', 'peasant7'];
+    if (!throws(() => E.apply(S, {t: 'peasants', n: 3, pay: []}))) return '3 without brewery';
+    E.apply(S, {t: 'peasants', n: 2, pay: []});
+    if (S.players[0].hand.length !== 4 || S.bistro.length !== 1) return 'took 2';
+    const X = fresh(); X.bistro = ['peasant3', 'peasant4', 'peasant7', 'peasant8']; build(X, 0, 'brewer1');
+    E.apply(X, {t: 'peasants', n: 4, pay: []});
+    return X.bistro.length === 0 || 'brewery 4';
+  });
+  t('Parlor: one fewer accomplice to bribe; two Parlors stack; never below 0', () => {
+    const S = fresh(); build(S, 0, 'representative1'); put(S, 0, 'count1'); put(S, 1, 'baron1');
+    if (E.cost(S, 0, {t: 'bribe', rooms: [0]}) !== 1) return 'one parlor';
+    build(S, 0, 'representative2');
+    return (E.cost(S, 0, {t: 'bribe', rooms: [0]}) === 0 && E.cost(S, 0, {t: 'bribe', rooms: [1]}) === 0) || 'two parlors';
+  });
+  t('Store: several travelers in one bribe for the sum of ranks; a Parlor counts once per action', () => {
+    const S = fresh(); put(S, 0, 'count1'); put(S, 1, 'chief1');
+    if (!E.check(S, {t: 'bribe', rooms: [0, 1], pay: []}).includes('Store')) return 'multi without store';
+    build(S, 0, 'shopkeeper1'); build(S, 0, 'representative1');
+    return E.cost(S, 0, {t: 'bribe', rooms: [0, 1]}) === 3 || 'cost ' + E.cost(S, 0, {t: 'bribe', rooms: [0, 1]});
+  });
+  t('Build: pay with other cards; Workshop -1 (stacking); police and peasants cannot be annexes', () => {
+    const S = fresh(); const P = S.players[0];
+    P.hand = ['distiller1', 'mechanic1', 'baron1', 'peasant1', 'major1'];
+    if (!E.check(S, {t: 'build', card: 'major1', pay: []})) return 'police annex';
+    if (!E.check(S, {t: 'build', card: 'distiller1', pay: ['distiller1', 'baron1']})) return 'paid with itself';
+    E.apply(S, {t: 'build', card: 'distiller1', pay: ['mechanic1', 'baron1']});
+    if (!P.hand.includes('mechanic1') || !S.exit.includes('baron1') || !P.annexes.some(a => a.id === 'distiller1')) return 'aptitude';
+    build(S, 0, 'mechanic2'); build(S, 0, 'mechanic3');
+    return E.cost(S, 0, {t: 'build', card: 'grocer1'}) === 1 || 'two workshops';
+  });
+  t('Kill: the guest becomes your corpse; Butcher allows several (sum of ranks), peasants one at a time', () => {
+    const S = fresh(); const P = S.players[0];
+    put(S, 0, 'baron1'); put(S, 1, 'newsboy1'); S.bistro = ['peasant3'];
+    if (!E.check(S, {t: 'kill', rooms: [0, 1], pay: []}).includes('Butcher')) return 'multi without butcher';
+    build(S, 0, 'butcher1');
+    E.apply(S, {t: 'kill', rooms: [0, 1], pay: []});
+    turn(S); E.apply(S, {t: 'killPeasant', pay: []});
+    return (P.corpses.length === 3 && !S.bistro.length) || 'corpses';
+  });
+  t('Bury: capacity = annex rank (barn 1, rank-0 none); own annex pays all, another player\u2019s splits; 40F cap', () => {
+    const S = fresh(); const P = S.players[0], Q = S.players[1];
+    P.corpses = ['count1', 'baron2']; P.hand = ['novice1', 'peasant1']; P.cash = 30; Q.cash = 10;
+    build(S, 1, 'newsboy2');
+    if (!E.check(S, {t: 'bury', items: [{id: 'baron2', owner: 1, annex: 1}], pay: []})) return 'rank-0 annex accepted';
+    E.apply(S, {t: 'bury', items: [{id: 'count1', owner: 1, annex: 0}], pay: ['novice1', 'peasant1']});
+    if (P.cash !== 39 || Q.cash !== 19 || !P.hand.includes('novice1') || !S.bistro.includes('peasant1')) return `split ${P.cash}/${Q.cash}`;
+    turn(S); E.apply(S, {t: 'bury', items: [{id: 'baron2', owner: 0, annex: 0}], pay: []});
+    if (P.cash !== 40) return 'cap';
+    turn(S); P.corpses = ['baron3'];
+    return !!E.check(S, {t: 'bury', items: [{id: 'baron3', owner: 1, annex: 0}], pay: []}) || 'barn holds 1';
+  });
+  t('Cellar -1; Crypt buries several corpses, under different annexes', () => {
+    const S = fresh(); const P = S.players[0];
+    P.corpses = ['count1', 'monk2']; P.hand = ['peasant1', 'peasant5'];
+    build(S, 0, 'abbot1'); build(S, 0, 'archbishop1');
+    if (E.cost(S, 0, {t: 'bury', items: [{id: 'count1'}, {id: 'monk2'}]}) !== 2) return 'cost';
+    E.apply(S, {t: 'bury', items: [{id: 'count1', owner: 0, annex: 1}, {id: 'monk2', owner: 0, annex: 0}], pay: ['peasant1', 'peasant5']});
+    return (P.annexes[0].under.length === 1 && P.annexes[1].under.length === 1 && P.corpses.length === 0) || 'placement';
+  });
+  t('Chapel: every card paid for a burial returns to hand, peasants too', () => {
+    const S = fresh(); const P = S.players[0];
+    build(S, 0, 'priest1'); P.corpses = ['count1']; P.hand = ['peasant1', 'baron1'];
+    E.apply(S, {t: 'bury', items: [{id: 'count1', owner: 0, annex: 1}], pay: ['peasant1', 'baron1']});
+    return (P.hand.length === 2 && !S.bistro.length) || 'returned';
+  });
+  t('Pass and launder: one direction per pass, any number of checks; cashing over 40F wastes the excess', () => {
+    const S = fresh(); const P = S.players[0]; P.cash = 25; P.checks = 0;
+    E.apply(S, {t: 'pass', launder: 2});
+    if (P.cash !== 5 || P.checks !== 2) return 'buy';
+    turn(S); P.cash = 35;
+    E.apply(S, {t: 'pass', launder: -1});
+    return (P.cash === 40 && P.checks === 1 && P.wasted === 5) || `cash ${P.cash}`;
+  });
+  t('Police: any police guest triggers 10F per unburied corpse; corpses go to the box', () => {
+    const S = fresh(); const P = S.players[0];
+    put(S, 2, 'peacekeeper1'); P.corpses = ['baron1', 'baron2']; P.cash = 30; P.checks = 0;
+    S.pending = null; S.queue = [{k: 'police'}]; E.advance(S);
+    return (P.cash === 10 && !P.corpses.length && S.box.includes('baron1')) || `cash ${P.cash}`;
+  });
+  t('Gravedigger: choose checks or cash per 10F; when both run short, pay all remaining cash', () => {
+    const S = fresh(); const P = S.players[0];
+    put(S, 2, 'major1'); P.corpses = ['baron1', 'baron2']; P.cash = 25; P.checks = 1;
+    S.pending = null; S.queue = [{k: 'police'}]; E.advance(S);
+    if (!S.pending || S.pending.t !== 'grave' || S.pending.lo !== 0 || S.pending.hi !== 1) return 'range';
+    E.apply(S, {t: 'grave', checks: 1});
+    if (P.cash !== 15 || P.checks !== 0) return 'paid';
+    const X = fresh(); const Q = X.players[0];
+    put(X, 2, 'major1'); Q.corpses = ['baron1', 'baron2', 'baron3']; Q.cash = 14; Q.checks = 1;
+    X.pending = null; X.queue = [{k: 'police'}]; E.advance(X);
+    return (Q.cash === 0 && Q.checks === 0) || `short ${Q.cash}/${Q.checks}`;
+  });
+  t('Travelers leave: 1F per occupied room of your colour, white rooms earn nothing; Gardens +2F every round', () => {
+    const S = fresh(); const P = S.players[0], Q = S.players[1];
+    put(S, 0, 'baron1'); put(S, 2, 'baron2'); P.cash = 0; Q.cash = 0; build(S, 1, 'gardener1');
+    S.pending = null; S.queue = [{k: 'leave'}]; E.advance(S);
+    return (P.cash === 1 && Q.cash === 2 && S.exit.length === 2) || `${P.cash}/${Q.cash}`;
+  });
+  t('Wages: 1F per card in hand; each Distillery frees one; short cash releases accomplices of your choice', () => {
+    const S = fresh(); const P = S.players[0];
+    P.hand = ['peasant1', 'peasant5', 'baron1']; P.cash = 10; build(S, 0, 'distiller1'); build(S, 0, 'distiller2');
+    S.pending = null; S.queue = [{k: 'wages', p: 0}]; E.advance(S);
+    if (P.cash !== 9) return 'distilleries ' + P.cash;
+    const X = fresh(); const Q = X.players[0];
+    Q.hand = ['peasant1', 'peasant5', 'baron1', 'count1']; Q.cash = 1; Q.checks = 3;
+    X.pending = null; X.queue = [{k: 'wages', p: 0}]; E.advance(X);
+    if (!X.pending || X.pending.t !== 'release' || X.pending.k !== 3) return 'release prompt';
+    E.apply(X, {t: 'release', ids: ['peasant1', 'baron1', 'peasant5']});
+    return (Q.hand.join() === 'count1' && X.bistro.length === 2 && X.exit.includes('baron1') && Q.checks === 3 && Q.cash === 0) || 'released';
+  });
+  t('Entrance empties: first time the Exit Stack is shuffled in at once; second time is the final round', () => {
+    const S = fresh(2); S.entrance = ['baron1']; S.exit = ['baron2', 'baron3', 'count1'];
+    S.pending = null; S.queue = [{k: 'welcome'}]; S.opts.fcfs = true;
+    for (const R of S.rooms) R.guest = null;
+    E.advance(S);
+    if (S.season !== 2) return 'no second season';
+    if (!S.log.some(l => l.kind === 'season' && l.text.includes('shuffled')) || S.log.findIndex(l => l.text.includes('final')) < S.log.findIndex(l => l.text.includes('shuffled'))) return 'order';
+    return (S.entrance.length === 0 && S.empties === 2 && S.final && E.guestsInInn(S) === 4) || `entrance ${S.entrance.length} empties ${S.empties}`;
+  });
+  t('Final round is skipped with fewer travelers than players: straight to scoring, no police or wages', () => {
+    const S = fresh(3); S.entrance = ['peacekeeper1']; S.exit = []; S.empties = 1; S.season = 2;
+    S.players[0].hand = ['peasant1']; S.players[0].cash = 7;
+    S.pending = null; S.queue = [{k: 'welcome'}, {k: 'turn', p: 0, ar: 0}, {k: 'wages', p: 0}]; S.opts.fcfs = true;
+    E.advance(S);
+    return (S.over && S.players[0].cash === 7 && S.exit.length === 1) || `over ${S.over} cash ${S.players[0].cash}`;
+  });
+  t('End of game: gravedigger, then Park 4F per red Exit card and Greenhouse 3F per check, still capped at 40F', () => {
+    const S = fresh(2); const P = S.players[0], Q = S.players[1];
+    P.cash = 38; P.checks = 2; P.corpses = ['baron1']; build(S, 0, 'landscaper1'); build(S, 0, 'prince1');
+    S.exit = ['mechanic1', 'mechanic2', 'cultivator1', 'baron4']; Q.cash = 0; Q.checks = 0;
+    S.pending = null; S.queue = []; S.final = true; S.queue.push({k: 'roundEnd'}); E.advance(S);
+    if (!S.pending || S.pending.t !== 'grave') return 'gravedigger prompt';
+    E.apply(S, {t: 'grave', checks: 0});
+    return (P.cash === 40 && S.bonus[0].park === 12 && S.result.rows[0].total === 60) || `cash ${P.cash} park ${S.bonus[0].park}`;
+  });
+  t('Tiebreak: most corpses under the annexes you own, whoever buried them', () => {
+    const S = fresh(2); const P = S.players[0], Q = S.players[1];
+    P.cash = 20; Q.cash = 20; P.checks = Q.checks = 0;
+    Q.annexes[0].under.push('baron1');
+    const R = E.result(S);
+    return (R.rows[1].rank === 1 && R.rows[0].rank === 2) || 'rank';
+  });
+  t('Unlimited Wealth: over 40F, take four checks and restart the disc', () => {
+    const S = fresh(2, {unlimited: true}); const P = S.players[0]; P.cash = 38; P.checks = 0;
+    P.corpses = ['count1'];
+    E.apply(S, {t: 'bury', items: [{id: 'count1', owner: 0, annex: 0}], pay: E.suggestPay(S, 0, {t: 'bury', items: [{id: 'count1'}]})});
+    return (P.cash === 16 && P.checks === 4) || `${P.cash}/${P.checks}`;
+  });
+  t('Monk replaces a white Key; Concierge puts Room Service next to any Key', () => {
+    const S = fresh(2); const P = S.players[0];
+    P.hand = ['monk1', 'peasant1', 'concierge1', 'newsboy1', 'newsboy2'];
+    E.apply(S, {t: 'build', card: 'monk1', pay: ['peasant1']});
+    if (!S.pending || S.pending.t !== 'monk') return 'monk prompt';
+    E.apply(S, {t: 'monk', room: 3});
+    if (S.rooms[3].key !== 0) return 'key';
+    turn(S); E.apply(S, {t: 'build', card: 'concierge1', pay: ['newsboy1', 'newsboy2']});
+    if (!S.pending || S.pending.t !== 'rs') return 'rs prompt';
+    E.apply(S, {t: 'rs', room: 1});
+    return (S.rooms[1].rs === 0 && P.hand.length === 0 && S.exit.length === 2) || 'rs';
+  });
+  t('Kiosk, Vegetable Garden and Altar count same-colour annexes including the new one (not the barn)', () => {
+    const S = fresh(2); const P = S.players[0]; P.cash = 0;
+    build(S, 0, 'grocer1'); P.hand = ['newsboy1'];
+    E.apply(S, {t: 'build', card: 'newsboy1', pay: []});
+    return P.cash === 2 || 'cash ' + P.cash;
+  });
+  t('Solo: an unburied corpse during a police investigation loses the game', () => {
+    const S = fresh(1); S.players[0].corpses = ['baron1']; put(S, 0, 'brigadier1');
+    S.pending = null; S.queue = [{k: 'police'}]; E.advance(S);
+    return (S.over && S.lost && S.result.rating === 'arrested') || 'lost';
+  });
+  t('AI Normal is deterministic and never needs hidden cards', () => {
+    const S = E.newGame({seed: 21, seats: seatsN(4).map(s => ({...s, type: 'ai'}))});
+    let g = 0;
+    while (S.pending && S.pending.t !== 'turn' && g++ < 20) E.apply(S, AI.minor(S));
+    const a = JSON.stringify(AI.normal(S)), X = structuredClone(S);
+    X.entrance = [X.entrance[0], ...X.entrance.slice(1).reverse()];
+    return (a === JSON.stringify(AI.normal(S)) && a === JSON.stringify(AI.normal(X))) || 'differs';
+  });
+  t('Every AI level finishes a 4-player short game with legal moves', () => {
+    for (const level of ['easy', 'normal', 'hard']) {
+      const S = E.newGame({seed: 4, long: false, seats: seatsN(4).map(s => ({...s, type: 'ai', level}))});
+      let g = 0;
+      while (!S.over && g++ < 2000) E.apply(S, AI.decide(S));
+      if (!S.over) return level + ' did not finish';
+    }
+    return true;
+  });
+
+  function run() {
+    const res = [];
+    for (const {name, fn} of list) {
+      let r;
+      try { r = fn(); } catch (e) { r = 'threw ' + e.message; }
+      res.push({name, ok: r === true, msg: r === true ? '' : String(r)});
+    }
+    return res;
+  }
+  return {run, list};
+})();
+
+// ===== UI: renders state, turns taps into engine actions, runs AI seats. =====
+const Q = new URLSearchParams(location.search);
+const $ = (s, el = document) => el.querySelector(s);
+const $$ = (s, el = document) => [...el.querySelectorAll(s)];
+const esc = s => String(s).replace(/[&<>"]/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;'}[c]));
+const RULES_URL = 'https://boardgamegeek.com/boardgame/180974/the-bloody-inn';
+const KEY = 'bloodyinn.';
+const store = {
+  get(k, d) { try { const v = localStorage.getItem(KEY + k); return v == null ? d : JSON.parse(v); } catch { return d; } },
+  set(k, v) { try { localStorage.setItem(KEY + k, JSON.stringify(v)); } catch {} },
+  del(k) { try { localStorage.removeItem(KEY + k); } catch {} },
+};
+const ICON = {bribe: '\u{1F4B6}', build: '\u{1F528}', kill: '\u{1F52B}', bury: '\u26B0\uFE0F', pass: '\u{1F4A4}', police: '\u{1F46E}', check: '\u{1F9FE}', cash: '\u{1F4B0}', bistro: '\u{1F37A}', key: '\u{1F5DD}\uFE0F', rs: '\u{1F37D}\uFE0F'};
+const COL_HEX = {blue: '#2f5f9e', red: '#a8322b', purple: '#6c3a8c', green: '#3a7347', grey: '#6b6b6b', yellow: '#c9971c'};
+const SHORT = {kiosk: '+1F per blue annex', parlor: 'Bribe: 1 accomplice fewer', roomservice: 'Token on a door: guests there pay you their rank', grocery: '+4F. End: 4F per blue card in the Exit Stack',
+  store: 'Bribe any number of travelers at once', brewery: 'Bribe up to 4 peasants', vegetable: '+1F per red annex', workshop: 'Build: 1 accomplice fewer', distillery: 'Wages: one accomplice is free',
+  park: '+4F. End: 4F per red card in the Exit Stack', gardens: '+2F every round', butcher: 'Kill any number of travelers at once', altar: '+1F per purple annex', room: 'Claim a white-key room',
+  cellar: 'Bury: 1 accomplice fewer', chapel: 'Bury: every payer returns to hand', bishopric: '+4F. End: 4F per purple card in the Exit Stack', crypt: 'Bury any number of corpses at once',
+  chandelier: '+4F', bed: '+6F', dining: '+9F', stables: '+4F. End: 4F per green card in the Exit Stack', detached: '+18F', greenhouse: 'End: 3F per check'};
+const MENU_ICON = '<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M12 2c3 4 6 7 6 11a6 6 0 0 1-12 0c0-4 3-7 6-11z" fill="#b3161b" stroke="#2a0b0b" stroke-width="1.2"/><path d="M9.5 14a2.5 2.5 0 0 0 2.5 2.5" stroke="#ffb4a8" stroke-width="1.4" fill="none" stroke-linecap="round"/></svg>';
+
+const UI = {
+  S: null, undo: [], sel: null, tab: 'players', viewer: 0, timer: 0, gen: 0, flash: new Set(), deltas: [],
+  sheetMin: matchMedia('(max-width: 759px)').matches,
+  mute: store.get('mute', false), anim: store.get('anim', !matchMedia('(prefers-reduced-motion: reduce)').matches),
+  art: Q.has('icons') ? false : store.get('art', true), aiSpeed: store.get('aiSpeed', 'normal'),
+  kcur: null, hold: false, practice: false, tour: null, seasonSnap: null, docked: false,
+  freeze: Q.has('freeze'), debug: Q.has('debug'), edit: Q.has('edit'), auto: false, modal: null, setup: null,
+};
+if (UI.freeze) UI.anim = false;
+
+// ---------- sound (Web Audio, synthesised) ----------
+const Sound = (() => {
+  let ctx = null;
+  const tones = {card: [[520, .05]], coin: [[880, .06], [1320, .08]], kill: [[140, .14], [90, .16]], bury: [[220, .08], [180, .08], [150, .12]],
+    police: [[780, .14], [620, .14], [780, .14], [620, .14]], round: [[392, .08], [523, .1]], season: [[330, .12], [262, .12], [196, .25]],
+    win: [[523, .15], [659, .15], [784, .15], [1047, .35]], click: [[700, .03]], lose: [[300, .2], [220, .3]]};
+  return name => {
+    if (UI.mute || UI.freeze || UI.auto || !tones[name]) return;
+    try {
+      ctx = ctx || new (window.AudioContext || window.webkitAudioContext)();
+      let t = ctx.currentTime;
+      for (const [f, d] of tones[name]) {
+        const o = ctx.createOscillator(), g = ctx.createGain();
+        o.type = name === 'kill' || name === 'police' ? 'square' : 'triangle'; o.frequency.value = f;
+        g.gain.setValueAtTime(name === 'police' ? .05 : .12, t); g.gain.exponentialRampToValueAtTime(.001, t + d);
+        o.connect(g).connect(ctx.destination); o.start(t); o.stop(t + d + .02); t += d * .9;
+      }
+    } catch {}
+  };
+})();
+
+// ---------- helpers ----------
+const actor = S => S && S.pending ? S.pending.p : null;
+const seat = p => UI.S.seats[p];
+const isHuman = p => seat(p).type === 'human';
+const humans = () => UI.S.seats.map((s, i) => s.type === 'human' ? i : -1).filter(i => i >= 0);
+const pnp = () => humans().length > 1;
+function viewer() {
+  const h = humans();
+  if (!h.length) return 0;
+  return h.includes(UI.viewer) ? UI.viewer : h[0];
+}
+const myTurn = () => UI.S && !UI.S.over && UI.S.pending && isHuman(UI.S.pending.p) && (!pnp() || UI.viewer === UI.S.pending.p) && !UI.auto && !UI.hold;
+const pname = p => Engine.pname(UI.S, p);
+const pcol = p => SEAT_HEX[UI.S.seats[p].color];
+const solo = () => UI.S.n === 1;
+const you = p => humans().length === 1 && isHuman(p);
+const who = p => you(p) ? 'You' : pname(p);
+const plural = (n, one, many = one + 's') => `${n} ${n === 1 ? one : many}`;
+const cops = S => S.rooms.some(R => R.guest && Engine.isPolice(R.guest));
+const wagesDue = P => Math.max(0, P.hand.length - Engine.count(P, 'distillery'));
+function toast(msg, ms = 1900) {
+  const t = document.createElement('div'); t.className = 'toast'; t.textContent = msg; document.body.appendChild(t);
+  setTimeout(() => t.remove(), ms);
+}
+
+// ---------- art: photos keyed by card type (front) and <type>~b (dead side), barn, B:board.
+// The local build embeds them (publish.py); the web build fetches art.bin, AES-GCM encrypted, and unlocks it only with the key from a private #art= link.
+const ART = {};
+(src => {
+  for (const [id, uri] of Object.entries(src || {})) {
+    try {
+      const bin = atob(uri.slice(uri.indexOf(',') + 1)), a = new Uint8Array(bin.length);
+      for (let i = 0; i < bin.length; i++) a[i] = bin.charCodeAt(i);
+      ART[id] = URL.createObjectURL(new Blob([a], {type: uri.slice(5, uri.indexOf(';'))}));
+    } catch { ART[id] = uri; }
+  }
+})(/*CARDART*/null/*/CARDART*/);
+const hasArt = () => Object.keys(ART).length > 0;
+const art = id => UI.art && ART[id];
+async function artUnlock() {
+  if (hasArt() || !/^https?:$/.test(location.protocol) || !(window.crypto && crypto.subtle)) return;
+  const m = location.hash.match(/(?:^#|&)art=([A-Za-z0-9_-]{43})/);
+  if (m) { store.set('artkey', m[1]); history.replaceState(null, '', location.pathname + location.search); }
+  const k = store.get('artkey', null);
+  if (!k) return;
+  try {
+    const raw = Uint8Array.from(atob(k.replace(/-/g, '+').replace(/_/g, '/') + '='), c => c.charCodeAt(0));
+    const res = await fetch('art.bin');
+    if (!res.ok) return;
+    const buf = new Uint8Array(await res.arrayBuffer()), magic = buf.subarray(0, 4);
+    const key = await crypto.subtle.importKey('raw', raw, 'AES-GCM', false, ['decrypt']);
+    const pt = new Uint8Array(await crypto.subtle.decrypt({name: 'AES-GCM', iv: buf.subarray(4, 16), additionalData: magic}, key, buf.subarray(16)));
+    const hl = new DataView(pt.buffer).getUint32(0);
+    let off = 4 + hl;
+    for (const [id, type, len] of JSON.parse(new TextDecoder().decode(pt.subarray(4, off)))) {
+      ART[id] = URL.createObjectURL(new Blob([pt.subarray(off, off + len)], {type})); off += len;
+    }
+    if (UI.S && $('#game')) renderGame(); else if ($('.landing')) landing();
+  } catch (e) {
+    if (e && e.name === 'OperationError') { store.del('artkey'); toast('This art link is not valid for this version.'); }
+  }
+}
+addEventListener('hashchange', artUnlock);
+
+// ---------- cards ----------
+let clipSeq = 0;
+function wrap(text, n) {
+  const out = []; let line = '';
+  for (const w of text.split(' ')) { if ((line + ' ' + w).trim().length > n && line) { out.push(line); line = w; } else line = (line + ' ' + w).trim(); }
+  if (line) out.push(line);
+  return out;
+}
+const coinSVG = (x, y, n, r = 9) => `<circle cx="${x}" cy="${y}" r="${r}" fill="#e6b93c" stroke="#5c430f" stroke-width="1.4"/><text x="${x}" y="${y + r * .4}" font-size="${r * 1.05}" text-anchor="middle" font-weight="700" fill="#2b1d05">${n}</text>`;
+const housePath = (x, y, s, fill) => `<path transform="translate(${x},${y}) scale(${s})" d="M0 8 L10 0 L20 8 L20 22 L0 22 Z" fill="${fill}" stroke="#1d150c" stroke-width="1.2"/>`;
+function aliveSVG(t) {
+  const c = COL_HEX[t.color], apt = APTITUDE[t.color], nm = t.name.toUpperCase();
+  let s = `<rect width="100" height="140" rx="7" fill="#17110d"/><rect x="4" y="4" width="92" height="132" rx="5" fill="${c}"/>
+    <rect x="4" y="4" width="92" height="74" rx="5" fill="url(#gsh)" opacity=".55"/>
+    <rect x="4" y="4" width="92" height="17" rx="5" fill="#efe3c4"/>
+    <text x="50" y="16.4" font-size="${nm.length > 12 ? 6.4 : nm.length > 9 ? 7.4 : 8.6}" text-anchor="middle" font-weight="700" fill="#2a1d12" class="cfont">${esc(nm)}</text>`;
+  if (apt) s += `<text x="9" y="32" font-size="9">${ICON[apt]}</text><text x="91" y="32" font-size="9" text-anchor="end">${ICON[apt]}</text>`;
+  s += `<path d="M50 28 a11 11 0 1 1 -.1 0 Z M30 78 C30 58 70 58 70 78 Z" fill="rgba(0,0,0,.28)"/>`;
+  s += `<circle cx="17" cy="70" r="9.5" fill="#f6efdc" stroke="#1d150c" stroke-width="1.3"/><text x="17" y="74.5" font-size="12" text-anchor="middle" font-weight="800" fill="#1d150c">${t.rank}</text>`;
+  s += coinSVG(83, 70, t.money, 9.5);
+  s += `<rect x="4" y="82" width="92" height="54" rx="4" fill="#efe3c4"/>`;
+  if (t.annex) {
+    s += housePath(7, 86, .82, c) + `<text x="15.2" y="102.5" font-size="8" text-anchor="middle" font-weight="800" fill="#fff">${t.rank}</text>`;
+    s += `<text x="29" y="93" font-size="${t.annex.length > 13 ? 6.3 : 7.2}" font-weight="800" fill="#2a1d12" class="cfont">${esc(t.annex.toUpperCase())}</text>`;
+    wrap(SHORT[t.effect] || '', 22).slice(0, 4).forEach((l, i) => { s += `<text x="${i < 1 ? 29 : 8}" y="${103 + i * 8}" font-size="6.4" fill="#3b2a1a">${esc(l)}</text>`; });
+  } else {
+    s += `<text x="50" y="106" font-size="7.5" text-anchor="middle" fill="#3b2a1a">${t.color === 'grey' ? 'Police: no annex.' : 'Peasant: no annex.'}</text>
+      <text x="50" y="117" font-size="6.4" text-anchor="middle" fill="#5a4630">${t.color === 'grey' ? 'In the inn, he investigates.' : 'Paid peasants go back to the bistro.'}</text>`;
+  }
+  return s;
+}
+function deadSVG(t) {
+  return `<rect width="100" height="140" rx="7" fill="#100c0b"/><path d="M8 60 C20 30 40 70 30 120 L10 132 Z M92 20 C70 40 92 80 78 130 L94 132 Z" fill="#c8483b" opacity=".85"/>
+    <path d="M36 22 L64 22 L74 44 L66 124 L34 124 L26 44 Z" fill="#6b655c" stroke="#2b2722" stroke-width="2"/>
+    <rect x="34" y="40" width="32" height="18" rx="3" fill="#57514a" stroke="#2b2722"/><text x="50" y="54.5" font-size="15" text-anchor="middle" font-weight="800" fill="#e2483a">${t.rank}</text>
+    ${t.rank >= 1 ? '<path d="M44 22 q6 -12 12 0 Z" fill="#c8483b"/>' : ''}${coinSVG(78, 128, t.money, 8.5)}`;
+}
+function cardSVG(id, {dead = false, cls = '', attrs = ''} = {}) {
+  const t = T(id), key = artFront(id) + (dead ? '~b' : ''), lab = `${t.name}${dead ? ' (corpse)' : ''}, rank ${t.rank}, ${t.money}F`;
+  let inner;
+  if (art(key)) {
+    const cp = 'cc' + (++clipSeq);
+    inner = `<clipPath id="${cp}"><rect width="100" height="140" rx="7"/></clipPath><rect width="100" height="140" rx="7" fill="#17110d"/>`
+      + `<image href="${ART[key]}" width="100" height="140" preserveAspectRatio="xMidYMid slice" clip-path="url(#${cp})"/><rect width="100" height="140" rx="7" fill="none" stroke="#0c0806" stroke-width="2.5"/>`;
+  } else inner = dead ? deadSVG(t) : aliveSVG(t);
+  return `<svg class="card ${cls}" viewBox="0 0 100 140" role="img" aria-label="${esc(lab)}" ${attrs}>${inner}</svg>`;
+}
+function barnSVG() {
+  if (art('barn')) {
+    const cp = 'cc' + (++clipSeq);
+    return `<svg class="card" viewBox="0 0 100 140" role="img" aria-label="Barn, rank-1 annex"><clipPath id="${cp}"><rect width="100" height="140" rx="7"/></clipPath><image href="${ART.barn}" width="100" height="140" preserveAspectRatio="xMidYMid slice" clip-path="url(#${cp})"/><rect width="100" height="140" rx="7" fill="none" stroke="#0c0806" stroke-width="2.5"/></svg>`;
+  }
+  return `<svg class="card" viewBox="0 0 100 140" role="img" aria-label="Barn, rank-1 annex"><rect width="100" height="140" rx="7" fill="#17110d"/><rect x="4" y="4" width="92" height="132" rx="5" fill="#e4cf63"/>
+    <text x="50" y="22" font-size="9" text-anchor="middle" font-weight="800" fill="#2a1d12" class="cfont">PLAYER AID</text>${housePath(22, 40, 2.8, '#d7b938')}
+    <text x="50" y="68" font-size="22" text-anchor="middle" font-weight="800" fill="#2a1d12">1</text><rect x="12" y="106" width="76" height="14" rx="3" fill="#fff"/>
+    <text x="50" y="116.5" font-size="8" text-anchor="middle" font-weight="800" fill="#2a1d12" class="cfont">BARN</text></svg>`;
+}
+const defs = `<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs><linearGradient id="gsh" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#000" stop-opacity=".0"/><stop offset="1" stop-color="#000" stop-opacity=".6"/></linearGradient>
+  <radialGradient id="gwood" cx=".5" cy=".5" r=".7"><stop offset="0" stop-color="#f2b54a"/><stop offset=".7" stop-color="#c77a2a"/><stop offset="1" stop-color="#6d3814"/></radialGradient></defs></svg>`;
+
+// ---------- board strip: Wealth Track, doors, bistro ----------
+function boardSVG(big) {
+  const S = UI.S, B = BOARD;
+  let s = `<svg class="board" viewBox="0 0 ${B.w} ${B.h}" role="img" aria-label="The inn board: Wealth Track and bistro">`;
+  if (art('B:board')) s += `<image href="${ART['B:board']}" width="${B.w}" height="${B.h}" preserveAspectRatio="none"/>`;
+  else {
+    s += `<rect width="${B.w}" height="${B.h}" rx="10" fill="#2a1b12"/><rect x="40" y="30" width="${B.w - 80}" height="${B.h - 60}" fill="url(#gwood)"/>`;
+    for (let n = 0; n <= 40; n++) { const p = B.track[n]; s += `<circle cx="${p.x}" cy="${p.y}" r="${B.r}" fill="#7a5a1c" stroke="#3b2a0a" stroke-width="3"/><text x="${p.x}" y="${p.y + 8}" font-size="22" text-anchor="middle" font-weight="800" fill="#fff6dc">${n}</text>`; }
+    s += `<rect x="${B.bistro.x}" y="${B.bistro.y}" width="${B.bistro.w}" height="${B.bistro.h}" rx="8" fill="#3a2414" stroke="#7a5a3a" stroke-width="6"/>`;
+    B.doors.forEach((d, i) => { s += `<rect x="${d.x - 34}" y="${d.y - 12}" width="68" height="24" rx="6" fill="#3a2414" stroke="#c99b5a"/><text x="${d.x}" y="${d.y + 7}" font-size="18" text-anchor="middle" fill="#f3dfb5">${i + 1}</text>`; });
+    s += `<text x="${B.entrance.x}" y="${B.entrance.y}" font-size="30" text-anchor="middle" fill="#f3dfb5">\u21B7</text><text x="${B.exit.x}" y="${B.exit.y}" font-size="30" text-anchor="middle" fill="#f3dfb5">\u21B7</text>`;
+  }
+  S.rooms.forEach((R, i) => {
+    const d = B.doors[i];
+    if (R.key === null) return;
+    const fill = R.key === 'white' ? SEAT_HEX.white : pcol(R.key);
+    s += `<g class="door ${UI.flash.has('r' + i) ? 'fl' : ''}"><rect x="${d.x - 28}" y="${d.y - 11}" width="40" height="22" rx="4" fill="${fill}" stroke="#111" stroke-width="2"/><text x="${d.x - 8}" y="${d.y + 6}" font-size="15" text-anchor="middle">${ICON.key}</text>`;
+    if (R.rs !== null) s += `<rect x="${d.x + 14}" y="${d.y - 11}" width="22" height="22" rx="4" fill="${pcol(R.rs)}" stroke="#111" stroke-width="2"/><text x="${d.x + 25}" y="${d.y + 6}" font-size="13" text-anchor="middle">${ICON.rs}</text>`;
+    s += `</g>`;
+  });
+  const bx = B.bistro, nb = S.bistro.length;
+  s += `<g data-a="bistro" class="bistro ${tgtBistro() ? 'tgt' : ''}"><rect x="${bx.x}" y="${bx.y}" width="${bx.w}" height="${bx.h}" rx="10" fill="rgba(0,0,0,.001)" stroke="${tgtBistro() ? '#ffd24a' : 'none'}" stroke-width="6"/>`;
+  for (let k = 0; k < nb; k++) { const x = bx.x + 34 + (k % 2) * 72, y = bx.y + 40 + Math.floor(k / 2) * 46; s += `<circle cx="${x}" cy="${y}" r="17" fill="#d9a521" stroke="#2a1d12" stroke-width="3"/><text x="${x}" y="${y + 7}" font-size="20" text-anchor="middle">\u{1F9D1}\u200D\u{1F33E}</text>`; }
+  s += `<text x="${bx.x + bx.w / 2}" y="${bx.y + bx.h - 14}" font-size="22" text-anchor="middle" font-weight="700" fill="#fff6dc" stroke="#000" stroke-width="4" paint-order="stroke">Bistro ${nb}</text></g>`;
+  const at = {};
+  S.players.forEach((P, p) => {
+    const n = Math.max(0, Math.min(40, P.cash)), k = (at[n] = (at[n] || 0) + 1) - 1, pt = B.track[n];
+    s += `<g class="disc ${UI.flash.has('p' + p) ? 'fl' : ''}"><circle cx="${pt.x + k * 9 - 4}" cy="${pt.y - k * 7}" r="${B.r * .72}" fill="${pcol(p)}" stroke="#000" stroke-width="3"/><circle cx="${pt.x + k * 9 - 8}" cy="${pt.y - k * 7 - 4}" r="4" fill="#fff" opacity=".45"/></g>`;
+  });
+  if (UI.debug) {
+    B.track.forEach((p, n) => { s += `<circle cx="${p.x}" cy="${p.y}" r="${B.r}" fill="none" stroke="#f0f" stroke-width="2" data-e="t${n}"/><text x="${p.x + 12}" y="${p.y - 14}" font-size="13" fill="#f0f">${n}</text>`; });
+    B.doors.forEach((d, i) => { s += `<circle cx="${d.x}" cy="${d.y}" r="9" fill="#0ff" opacity=".8" data-e="d${i}"/>`; });
+    s += `<rect x="${B.bistro.x}" y="${B.bistro.y}" width="${B.bistro.w}" height="${B.bistro.h}" fill="none" stroke="#0ff" stroke-dasharray="8 6" stroke-width="3"/>`;
+  }
+  return s + (big ? '' : '') + '</svg>';
+}
+
+// ---------- targets for the current decision ----------
+function selCost() {
+  const S = UI.S, sel = UI.sel, p = actor(S);
+  if (!sel) return 0;
+  if (sel.mode === 'bribe' || sel.mode === 'kill') return Engine.cost(S, p, {t: sel.mode, rooms: sel.rooms});
+  if (sel.mode === 'build') return Engine.cost(S, p, {t: 'build', card: sel.card});
+  if (sel.mode === 'bury') return Engine.cost(S, p, {t: 'bury', items: sel.items});
+  return 0;
+}
+function selMove() {
+  const sel = UI.sel; if (!sel) return null;
+  switch (sel.mode) {
+    case 'bribe': case 'kill': return {t: sel.mode, rooms: sel.rooms, pay: sel.pay};
+    case 'build': return {t: 'build', card: sel.card, pay: sel.pay};
+    case 'bury': return {t: 'bury', items: sel.items.map(it => ({id: it.id, owner: it.owner, annex: it.annex})), pay: sel.pay};
+    case 'pass': return {t: 'pass', launder: sel.k || 0};
+  }
+  return null;
+}
+function tgtRoom(i) {
+  const S = UI.S; if (!myTurn()) return false;
+  const pd = S.pending, R = S.rooms[i];
+  if (pd.t === 'lodge') return R.key !== null && !R.guest;
+  if (pd.t === 'rs') return R.key !== null && R.rs === null;
+  if (pd.t === 'monk') return R.key === 'white';
+  if (pd.t !== 'turn' || !R.guest) return false;
+  const sel = UI.sel;
+  if (sel && (sel.mode === 'bribe' || sel.mode === 'kill')) return sel.multi;
+  if (sel && sel.mode !== 'choose') return false;
+  const o = Engine.options(S, pd.p);
+  return o.bribe.includes(i) || o.kill.includes(i);
+}
+function tgtHand(id) {
+  const S = UI.S; if (!myTurn()) return false;
+  const pd = S.pending, sel = UI.sel;
+  if (pd.t === 'release') return true;
+  if (pd.t !== 'turn') return false;
+  if (sel && ['bribe', 'kill', 'build', 'bury'].includes(sel.mode)) return id !== sel.card;
+  return Engine.options(S, pd.p).build.includes(id);
+}
+function tgtCorpse(id) {
+  const S = UI.S; if (!myTurn() || S.pending.t !== 'turn') return false;
+  const sel = UI.sel;
+  if (sel && sel.mode === 'bury') return Engine.count(S.players[S.pending.p], 'crypt') > 0;
+  if (sel && sel.mode !== 'choose') return false;
+  return Engine.options(S, S.pending.p).bury.includes(id);
+}
+function tgtAnnex(q, i) {
+  const S = UI.S, sel = UI.sel; if (!myTurn() || !sel || sel.mode !== 'bury') return false;
+  const used = sel.items.slice(0, -1).filter(it => it.owner === q && it.annex === i).length;
+  return Engine.annexFree(S.players[q].annexes[i]) - used > 0;
+}
+function tgtBistro() {
+  const S = UI.S; if (!myTurn() || S.pending.t !== 'turn' || (UI.sel && UI.sel.mode !== 'choose' && UI.sel.mode !== 'bistro')) return false;
+  return S.bistro.length > 0;
+}
+
+// ---------- rendering ----------
+function roomHTML(i) {
+  const S = UI.S, R = S.rooms[i], open = R.key !== null, sel = UI.sel;
+  const chosen = sel && ((sel.rooms && sel.rooms.includes(i)) || sel.room === i);
+  const key = !open ? '<span class="closed">closed</span>' : `<span class="keychip" style="--c:${R.key === 'white' ? SEAT_HEX.white : pcol(R.key)}" title="${R.key === 'white' ? 'Neutral room (white Key)' : 'Room of ' + esc(pname(R.key))}">${ICON.key}</span>`;
+  const rs = R.rs !== null ? `<span class="rschip" style="--c:${pcol(R.rs)}" title="Room Service: ${esc(pname(R.rs))} earns the guest's rank">${ICON.rs}</span>` : '';
+  const police = R.guest && Engine.isPolice(R.guest) ? `<span class="cop" title="Police: investigation at the end of the round">${ICON.police}</span>` : '';
+  return `<div class="room ${open ? '' : 'shut'} ${tgtRoom(i) ? 'tgt' : ''} ${chosen ? 'chosen' : ''} ${UI.flash.has('r' + i) ? 'fl' : ''}" data-a="room" data-i="${i}" tabindex="-1">
+    <div class="door"><b>${i + 1}</b>${key}${rs}${police}</div>
+    <div class="slot">${R.guest ? cardSVG(R.guest) : `<div class="empty">${open ? 'free' : ''}</div>`}</div></div>`;
+}
+function exitCounts(S) { const c = {}; for (const id of S.exit) c[T(id).color] = (c[T(id).color] || 0) + 1; return c; }
+function innHTML() {
+  const S = UI.S, top = S.entrance[0], ec = exitCounts(S);
+  const entr = `<button class="stack" data-a="entrance" title="Entrance Stack: ${S.entrance.length} cards">${top ? cardSVG(top) : '<div class="empty">empty</div>'}<span class="cnt">${S.entrance.length}</span><span class="lab">Entrance</span></button>`;
+  const exit = `<button class="stack exitst" data-a="exit" title="Exit Stack: ${S.exit.length} cards"><div class="exitbars">${['blue', 'red', 'purple', 'green', 'grey'].map(c => `<i style="--c:${COL_HEX[c]};--h:${Math.min(100, (ec[c] || 0) * 9)}%"></i>`).join('')}</div><span class="cnt">${S.exit.length}</span><span class="lab">Exit</span></button>`;
+  const bistro = `<button class="stack bist ${tgtBistro() ? 'tgt' : ''}" data-a="bistro" title="Bistro: ${S.bistro.length} peasants"><span class="big">${ICON.bistro}</span><span class="cnt">${S.bistro.length}</span><span class="lab">Bistro</span></button>`;
+  return `<section class="inn"><div class="rooms rtop">${[0, 1, 2, 3].map(roomHTML).join('')}</div>
+    <div class="mid">${entr}<div class="boardwrap"><button class="ghost bigb" data-a="bigboard" title="Enlarge the board" aria-label="Enlarge the board">\u2922</button>${boardSVG()}</div><div class="stk2">${bistro}${exit}</div></div>
+    <div class="rooms rbot">${[4, 5, 6, 7].map(roomHTML).join('')}</div></section>`;
+}
+function annexHTML(q, i, small) {
+  const S = UI.S, a = S.players[q].annexes[i], r = Engine.annexRank(a), tg = tgtAnnex(q, i);
+  const under = a.under.map(id => `<span class="tuck" title="${esc(T(id).name)}: ${T(id).money}F">${T(id).money}</span>`).join('');
+  return `<div class="annex ${tg ? 'tgt' : ''} ${small ? 'sm' : ''}" data-a="annex" data-p="${q}" data-i="${i}" title="${a.id === 'barn' ? 'Barn (player aid): rank 1' : esc(T(a.id).annex) + ': ' + esc(T(a.id).text)}">
+    ${a.id === 'barn' ? barnSVG() : cardSVG(a.id)}<div class="cap">${ICON.bury} ${a.under.length}/${r}${under}</div></div>`;
+}
+function tableauHTML(p) {
+  const S = UI.S, P = S.players[p], sel = UI.sel;
+  const inPay = id => sel && sel.pay && sel.pay.includes(id), inRel = id => sel && sel.ids && sel.ids.includes(id);
+  const act = sel && Engine.actionOf({t: sel.mode === 'bistro' ? 'peasants' : sel.mode});
+  const hand = P.hand.map(id => {
+    const dest = inPay(id) ? Engine.payDest(S, p, act, id) : '';
+    const badge = dest ? `<span class="paybadge ${dest}">${dest === 'hand' ? '\u21A9 returns' : dest === 'bistro' ? `${ICON.bistro} bistro` : '\u2192 exit'}</span>` : inRel(id) ? '<span class="paybadge exit">lets go</span>' : '';
+    return `<div class="hc ${tgtHand(id) ? 'tgt' : ''} ${inPay(id) || inRel(id) ? 'paying' : ''} ${sel && sel.card === id ? 'chosen' : ''}" data-a="hand" data-id="${id}">${cardSVG(id)}${badge}</div>`;
+  }).join('') || '<div class="none">No accomplices</div>';
+  const corpses = P.corpses.map(id => `<div class="hc ${tgtCorpse(id) ? 'tgt' : ''} ${sel && sel.items && sel.items.some(it => it.id === id) ? 'chosen' : ''}" data-a="corpse" data-id="${id}">${cardSVG(id, {dead: true})}</div>`).join('') || '<div class="none">None</div>';
+  const nm = you(p) ? 'Your' : esc(pname(p)) + '\u2019s';
+  return `<section class="tableau" style="--pc:${pcol(p)}">
+    <div class="trow"><h3>${nm} hand <small>${P.hand.length} \u00B7 wages ${wagesDue(P)}F</small></h3><div class="cards">${hand}</div></div>
+    <div class="trow"><h3>${nm} annexes <small>${P.annexes.length - 1} built \u00B7 ${Engine.buriedUnder(P)} buried</small></h3><div class="cards">${P.annexes.map((a, i) => annexHTML(p, i)).join('')}</div></div>
+    <div class="trow ${P.corpses.length ? 'warn' : ''}"><h3>${nm} unburied corpses <small>${P.corpses.length ? `${P.corpses.length * 10}F if the police come` : ''}</small></h3><div class="cards">${corpses}</div></div></section>`;
+}
+function moneyChip(p, big) {
+  const P = UI.S.players[p];
+  return `<span class="money ${big ? 'big' : ''} ${actor(UI.S) === p ? 'act' : ''}" style="--pc:${pcol(p)}" title="${esc(pname(p))}: ${P.cash}F cash and ${P.checks} check${P.checks === 1 ? '' : 's'} = ${Engine.wealth(P)}F">
+    <i></i><b>${P.cash}F</b>${P.checks ? `<span class="chk">${ICON.check}${P.checks}</span>` : ''}<small>${esc(who(p)).slice(0, 10)}</small>${deltaHTML(p)}</span>`;
+}
+function deltaHTML(p) {
+  return UI.deltas.filter(d => d.p === p).map(d => `<span class="delta ${d.v > 0 ? 'up' : 'dn'}">${d.v > 0 ? '+' : '\u2212'}${Math.abs(d.v)}F</span>`).join('');
+}
+function turnText() {
+  const S = UI.S;
+  if (S.over) return S.lost ? '\u26D3\uFE0F Arrested' : `\u{1F3C6} ${esc(S.result.rows.filter(r => r.rank === 1).map(r => who(r.p)).join(' & '))}`;
+  const pd = S.pending; if (!pd) return '\u2026';
+  const nm = you(pd.p) ? 'You' : esc(pname(pd.p)), yours = you(pd.p);
+  switch (pd.t) {
+    case 'lodge': return `${nm} ${yours ? 'welcome' : 'welcomes'} travelers`;
+    case 'turn': return `${yours ? 'Your' : nm + '\u2019s'} action ${pd.ar + 1}/2`;
+    case 'grave': return `${nm} ${yours ? 'pay' : 'pays'} the gravedigger`;
+    case 'release': return `${nm} ${yours ? 'let' : 'lets'} accomplices go`;
+    default: return `${nm} ${yours ? 'choose' : 'chooses'}`;
+  }
+}
+function topHTML() {
+  const S = UI.S, me = viewer(), others = S.players.map((_, p) => p).filter(p => p !== me);
+  const left = S.entrance.length, ap = actor(S);
+  return `<div class="top"><button data-a="menu" class="menubtn" title="Menu" aria-label="Menu">${MENU_ICON}</button><span class="title">The Bloody Inn</span>
+    <span class="tpill turn" style="--c:${ap !== null ? pcol(ap) : '#888'}"><i></i>${turnText()}</span>
+    <button class="tpill rnd" data-a="explain" data-k="round" title="Round ${S.round}, season ${S.season}: ${left} cards in the Entrance Stack"><b>R${S.round}</b><small>Season ${S.season}${S.final ? ' \u00B7 <em>final</em>' : ''}</small><span class="bar"><i style="width:${Math.min(100, left / 64 * 100)}%"></i></span><small>${left} left</small></button>
+    ${cops(S) ? `<button class="tpill cops" data-a="explain" data-k="police" title="Police in the inn">${ICON.police}<small>Police</small></button>` : ''}
+    ${moneyChip(me, true)}${others.map(p => moneyChip(p, false)).join('')}<span class="spacer"></span>
+    <button data-a="mute" title="Sound" aria-label="Sound">${UI.mute ? '\u{1F507}' : '\u{1F50A}'}</button><button data-a="help" title="How to play" aria-label="How to play">?</button></div>`;
+}
+
+function promptHTML() {
+  const S = UI.S;
+  const undo = UI.undo.length && !S.over ? `<button data-a="undo" title="Undo (Z)">\u21B6 Undo</button>` : '';
+  if (S.over) {
+    return `<div class="prompt over"><div class="ptext"><b>${S.lost ? 'Arrested!' : 'The game is over.'}</b> ${S.n === 1 ? `Final booty ${S.result.rows[0].total}F: ${esc(S.result.rating)}.` : ''}</div>
+      <div class="pbtns"><button class="primary" data-a="results">Results</button><button data-a="newgame">New game</button></div></div>`;
+  }
+  const pd = S.pending;
+  if (!pd) return `<div class="prompt"><div class="ptext">\u2026</div></div>`;
+  if (!myTurn()) {
+    const p = pd.p;
+    return `<div class="prompt wait" style="--pc:${pcol(p)}"><div class="ptext"><span class="dot"></span><b>${esc(pname(p))}</b> ${isHuman(p) ? 'is up next.' : pd.t === 'lodge' ? 'welcomes the travelers\u2026' : 'is thinking\u2026'}</div><div class="pbtns">${undo}</div></div>`;
+  }
+  const P = S.players[pd.p], sel = UI.sel;
+  const btns = (...b) => `<div class="pbtns">${b.filter(Boolean).join('')}${undo}</div>`;
+  const opt = (label, o, cls = '', dis = '') => `<button class="${cls}" data-a="opt" data-o="${esc(o)}" ${dis ? `disabled title="${esc(dis)}"` : ''}>${label}</button>`;
+  switch (pd.t) {
+    case 'lodge':
+      return `<div class="prompt"><div class="pcard">${cardSVG(pd.card)}</div><div class="ptext"><b>Welcome the travelers.</b> Lodge the <b>${esc(T(pd.card).name)}</b> (rank ${T(pd.card).rank}): tap a free open room.
+        ${S.rooms.some(R => R.rs !== null) ? '<br><small>Rooms with a Room Service token pay its owner the guest\u2019s rank.</small>' : ''}</div>${btns(opt('Lodge the rest for me', 'autolodge'))}</div>`;
+    case 'rs': return `<div class="prompt"><div class="ptext"><b>Room Service.</b> Tap a door with a Key and no Room Service token. Guests lodged there pay you their rank.</div>${btns()}</div>`;
+    case 'monk': return `<div class="prompt"><div class="ptext"><b>The Monk\u2019s Room.</b> Tap a room with a white Key: it becomes yours.</div>${btns()}</div>`;
+    case 'grave': {
+      const k = P.corpses.length, o = [];
+      for (let c = pd.lo; c <= pd.hi; c++) o.push(opt(`${c ? plural(c, 'check') : 'Cash only'}${k - c ? ` + ${Math.min(P.cash, (k - c) * 10)}F` : ''}`, 'grave:' + c, c === pd.lo ? 'primary' : ''));
+      return `<div class="prompt warnp"><div class="ptext"><b>The village gravedigger</b> takes 10F for each of your ${plural(k, 'unburied corpse')}${pd.why === 'end' ? ' (end of the game)' : ''}. Pay with checks or cash:</div>${btns(...o)}</div>`;
+    }
+    case 'release': {
+      const n = (sel && sel.ids || []).length;
+      return `<div class="prompt warnp"><div class="ptext"><b>Not enough cash for wages.</b> Choose ${plural(pd.k, 'accomplice')} to let go (peasants return to the bistro). Selected ${n}/${pd.k}.</div>
+        ${btns(opt('Let them go', 'release', 'primary', n === pd.k ? '' : `Choose ${pd.k}`))}</div>`;
+    }
+  }
+  // the main action decision
+  const o = Engine.options(S, pd.p), danger = cops(S) && P.corpses.length;
+  const warn = danger ? `<div class="pwarn">${ICON.police} Police in the inn: ${plural(P.corpses.length, 'unburied corpse')} will cost ${P.corpses.length * 10}F at the end of the round${pd.ar === 1 ? ' unless you bury now' : ''}.</div>` : '';
+  if (!sel) {
+    return `<div class="prompt"><div class="ptext"><b>Action ${pd.ar + 1} of 2.</b> Tap a traveler to <b>bribe</b> or <b>kill</b>, a card in your hand to <b>build</b> its annex, one of your corpses to <b>bury</b> it, or the bistro for peasants.</div>${warn}
+      ${btns(opt(`${ICON.pass} Pass / launder`, 'pass'))}</div>`;
+  }
+  if (sel.mode === 'choose') {
+    const id = S.rooms[sel.room].guest, cb = Engine.cost(S, pd.p, {t: 'bribe', rooms: [sel.room]}), ck = Engine.cost(S, pd.p, {t: 'kill', rooms: [sel.room]});
+    return `<div class="prompt"><div class="pcard">${cardSVG(id)}</div><div class="ptext"><b>${esc(T(id).name)}</b> in room ${sel.room + 1}: rank ${T(id).rank}, ${T(id).money}F in his pockets.${T(id).annex ? `<br><small>${esc(T(id).annex)}: ${esc(T(id).text)}</small>` : ''}</div>
+      ${btns(opt(`${ICON.bribe} Bribe (${plural(cb, 'card')})`, 'bribe', 'primary', o.bribe.includes(sel.room) ? '' : 'Not enough cards in hand'),
+        opt(`${ICON.kill} Kill (${plural(ck, 'card')})`, 'kill', '', o.kill.includes(sel.room) ? '' : 'Not enough cards in hand'), opt('Cancel', 'cancel', 'ghost'))}</div>`;
+  }
+  if (sel.mode === 'bistro') {
+    const b = [];
+    for (let n = 1; n <= o.peasants; n++) b.push(opt(`${ICON.bribe} Bribe ${plural(n, 'peasant')}`, 'peas:' + n, n === 1 ? 'primary' : ''));
+    return `<div class="prompt"><div class="ptext"><b>The bistro</b> (${plural(S.bistro.length, 'peasant')}). Peasants are rank 0: bribing 1 or 2${Engine.count(P, 'brewery') ? ' (4 with your Brewery)' : ''} or killing one costs nothing. Remember their wages.</div>
+      ${btns(...b, o.killPeasant ? opt(`${ICON.kill} Kill a peasant`, 'killpeas') : '', opt('Cancel', 'cancel', 'ghost'))}</div>`;
+  }
+  if (sel.mode === 'pass') {
+    const k = sel.k || 0, maxBuy = Math.floor(P.cash / 10);
+    return `<div class="prompt"><div class="ptext"><b>Pass.</b> You may launder money with the notary, in one direction: buy 10F checks with cash, or cash checks (cash is capped at 40F).</div>
+      <div class="launder"><button data-a="opt" data-o="k-" ${k <= -P.checks ? 'disabled' : ''} aria-label="Fewer">\u2212</button><span>${k > 0 ? `Buy ${plural(k, 'check')} (\u2212${10 * k}F)` : k < 0 ? `Cash ${plural(-k, 'check')} (+${-10 * k}F${P.cash - 10 * k > 40 ? `, ${P.cash - 10 * k - 40}F lost over 40F` : ''})` : 'No laundering'}</span><button data-a="opt" data-o="k+" ${k >= maxBuy ? 'disabled' : ''} aria-label="More">+</button></div>
+      ${btns(opt(`${ICON.pass} Pass`, 'confirm', 'primary'), opt('Cancel', 'cancel', 'ghost'))}</div>`;
+  }
+  // bribe / kill / build / bury: show the payment
+  const m = selMove(), need = selCost(), err = Engine.check(S, m), act = Engine.actionOf(m);
+  let what = '';
+  if (sel.mode === 'bribe' || sel.mode === 'kill') what = `${sel.mode === 'bribe' ? `${ICON.bribe} Bribe` : `${ICON.kill} Kill`} ${sel.rooms.map(i => `the <b>${esc(T(S.rooms[i].guest).name)}</b> (room ${i + 1})`).join(' and ')}.${sel.multi ? ' <small>Tap more travelers to add them.</small>' : ''}`;
+  if (sel.mode === 'build') what = `${ICON.build} Build the <b>${esc(T(sel.card).annex)}</b>: ${esc(T(sel.card).text)}`;
+  if (sel.mode === 'bury') {
+    what = `${ICON.bury} Bury ${sel.items.map(it => `the <b>${esc(T(it.id).name)}</b> (${T(it.id).money}F) under ${it.owner === undefined ? '<em>choose an annex</em>' : annexName(it.owner, it.annex)}`).join('; ')}.`;
+    what += Engine.count(P, 'crypt') ? ' <small>Tap more corpses to add them.</small>' : '';
+  }
+  const dests = sel.mode === 'bury' ? `<div class="dests">${destButtons()}</div>` : '';
+  const pay = sel.pay.map(id => `${esc(T(id).name)} ${({hand: '\u21A9', bistro: ICON.bistro, exit: '\u2192'})[Engine.payDest(S, pd.p, act, id)]}`).join(', ');
+  const pv = err ? '' : outcomeText(S, m, pd.p);
+  return `<div class="prompt"><div class="ptext">${what}<br><small>Pay ${plural(need, 'accomplice')}${need ? `: ${pay || '\u2014'}. Tap cards in your hand to change the payment (\u21A9 returns to hand: the action\u2019s aptitude).` : '.'}</small>
+    ${pv ? `<div class="pv">${pv}</div>` : ''}${err ? `<div class="perr">${esc(err)}</div>` : ''}</div>${dests}${warn}
+    ${btns(opt('Confirm', 'confirm', 'primary', err), opt('Cancel', 'cancel', 'ghost'))}</div>`;
+}
+function annexName(q, i) {
+  const a = UI.S.players[q].annexes[i];
+  return `${q === actor(UI.S) ? 'your' : esc(pname(q)) + '\u2019s'} ${a.id === 'barn' ? 'barn' : esc(T(a.id).annex)}`;
+}
+function destButtons() {
+  const S = UI.S, sel = UI.sel, p = actor(S), cur = sel.items[sel.items.length - 1];
+  return Engine.annexTargets(S, sel.items.slice(0, -1)).map(a => `<button data-a="dest" data-p="${a.p}" data-i="${a.i}" class="${cur.owner === a.p && cur.annex === a.i ? 'on' : ''}" style="--pc:${pcol(a.p)}">
+    ${annexName(a.p, a.i)} <small>${a.free} free${a.p === p ? '' : ' \u00B7 split'}</small></button>`).join('');
+}
+function outcomeText(S, m, p) {
+  const pv = Engine.preview(S, m); if (!pv) return '';
+  const out = [];
+  for (const d of pv) {
+    const parts = [];
+    if (d.cash) parts.push(`${d.cash > 0 ? '+' : '\u2212'}${Math.abs(d.cash)}F`);
+    if (d.checks) parts.push(`${d.checks > 0 ? '+' : '\u2212'}${plural(Math.abs(d.checks), 'check')}`);
+    if (d.p === p && d.hand) parts.push(`${d.hand > 0 ? '+' : '\u2212'}${plural(Math.abs(d.hand), 'card')} in hand`);
+    if (parts.length) out.push(`${d.p === p ? (you(p) ? 'You' : esc(pname(p))) : esc(pname(d.p))}: ${parts.join(', ')}`);
+  }
+  const P = S.players[p];
+  if (m.t === 'bribe') out.push(`${m.rooms.map(i => T(S.rooms[i].guest).name).join(' and ')} ${m.rooms.length > 1 ? 'join' : 'joins'} your hand (+1F wages each)`);
+  if (m.t === 'build') out.push(`new ${T(m.card).annex}, room for ${plural(T(m.card).rank, 'corpse')}`);
+  if (m.t === 'kill' || m.t === 'killPeasant') out.push('a corpse to bury before the police come');
+  if (P.cash + (pv[p].cash || 0) >= 40 && !S.opts.unlimited && (pv[p].cash || 0) > 0) out.push('cash capped at 40F');
+  return out.join(' \u00B7 ') || 'no money changes hands';
+}
+
+function playersHTML() {
+  const S = UI.S, me = viewer();
+  const order = [me, ...S.players.map((_, p) => p).filter(p => p !== me)];
+  return order.map(p => {
+    const P = S.players[p], keys = Engine.keysOf(S, p);
+    const chips = P.hand.map(id => `<span class="chip" style="--c:${COL_HEX[T(id).color]}" title="${esc(T(id).name)} (rank ${T(id).rank})">${esc(T(id).name)}</span>`).join('');
+    const ann = P.annexes.map((a, i) => `<button class="chip ann ${tgtAnnex(p, i) ? 'tgt' : ''}" data-a="annex" data-p="${p}" data-i="${i}" style="--c:${a.id === 'barn' ? '#c9a92c' : COL_HEX[T(a.id).color]}" title="${a.id === 'barn' ? 'Barn' : esc(T(a.id).annex + ': ' + T(a.id).text)}">${a.id === 'barn' ? 'Barn' : esc(T(a.id).annex)} <small>${ICON.bury}${a.under.length}/${Engine.annexRank(a)}</small></button>`).join('');
+    return `<div class="pl ${actor(S) === p ? 'act' : ''} ${UI.flash.has('p' + p) ? 'fl' : ''}" style="--pc:${pcol(p)}">
+      <button class="plh" data-a="player" data-p="${p}"><i></i><b>${esc(who(p))}</b><small>${isHuman(p) ? (you(p) ? '' : 'human') : 'AI ' + seat(p).level}${S.first === p ? ' \u00B7 first player' : ''}</small><span class="tot">${Engine.wealth(P)}F</span></button>
+      <div class="plrow">${ICON.cash} ${P.cash}F \u00B7 ${ICON.check} ${P.checks} \u00B7 ${ICON.key} ${plural(keys, 'room')} \u00B7 ${ICON.bury} ${Engine.buriedUnder(P)} buried${P.corpses.length ? ` \u00B7 <b class="bad">${plural(P.corpses.length, 'corpse')}</b>` : ''}</div>
+      <div class="plrow"><span class="muted">Hand ${P.hand.length}:</span> ${chips || '\u2014'}</div><div class="plrow chips">${ann}</div></div>`;
+  }).join('');
+}
+function journalHTML() {
+  const S = UI.S;
+  let last = -1, h = '';
+  const L = S.log.slice(-160);
+  for (let k = L.length - 1; k >= 0; k--) {
+    const l = L[k];
+    if (l.round !== last) { h += `<div class="jr">Round ${l.round}</div>`; last = l.round; }
+    const rm = l.room ?? (l.rooms && l.rooms[0]);
+    h += `<div class="je k-${l.kind} ${rm !== undefined ? 'link' : ''}" ${rm !== undefined ? `data-a="jroom" data-i="${rm}"` : ''} style="--pc:${l.p !== null && l.p !== undefined ? pcol(l.p) : 'transparent'}">${esc(l.text)}</div>`;
+  }
+  return h || '<p class="muted">Nothing yet.</p>';
+}
+function intelHTML() {
+  const S = UI.S, me = viewer(), ec = exitCounts(S);
+  const rows = S.players.map((_, q) => q).filter(q => q !== me).map(q => {
+    const notes = AI.intel(S, q);
+    return `<div class="pl" style="--pc:${pcol(q)}"><div class="plh static"><i></i><b>${esc(pname(q))}</b><span class="tot">${Engine.wealth(S.players[q])}F</span></div>
+      <ul class="intel">${notes.map(n => `<li>${esc(n)}</li>`).join('') || '<li class="muted">Nothing worrying.</li>'}</ul></div>`;
+  }).join('');
+  return `${rows}<div class="pl"><div class="plh static"><b>The stacks</b></div><div class="plrow">Entrance ${S.entrance.length} \u00B7 Exit ${S.exit.length} \u00B7 set aside at setup ${S.removed.length} (unseen)</div>
+    <div class="plrow">Exit Stack by colour: ${['blue', 'red', 'purple', 'green', 'grey'].map(c => `<span class="chip" style="--c:${COL_HEX[c]}">${COLOR_NAMES[c]} ${ec[c] || 0}</span>`).join(' ')}</div>
+    <div class="plrow muted">End-of-game annexes pay 4F per card of their colour in the Exit Stack.</div></div>`;
+}
+function sideBody() {
+  if (UI.tab === 'journal') return journalHTML();
+  if (UI.tab === 'intel') return intelHTML();
+  return playersHTML();
+}
+function renderGame() {
+  const S = UI.S, app = $('#app');
+  const keep = $('.tabbody') ? $('.tabbody').scrollTop : 0, keepMain = $('.main .play') ? $('.main .play').scrollTop : 0;
+  const tabs = ['players', 'journal', 'intel'].map(t => `<button class="${UI.tab === t ? 'on' : ''}" data-a="tab" data-t="${t}">${{players: 'Players', journal: 'Journal', intel: 'Rival intel'}[t]}</button>`).join('');
+  app.innerHTML = `${defs}<div id="game" class="${UI.anim ? '' : 'noanim'}">${topHTML()}
+    <div class="main"><div class="play">${innHTML()}${tableauHTML(viewer())}</div>
+      <aside class="side ${UI.sheetMin ? 'min' : ''}"><button class="grab" data-a="sheet" aria-label="${UI.sheetMin ? 'Expand panel' : 'Minimise panel'}"><span></span></button>${promptHTML()}
+        <div class="panelrest"><div class="tabs">${solo() ? tabs.replace(/<button[^>]*data-t="intel"[^>]*>.*?<\/button>/, '') : tabs}</div><div class="tabbody">${sideBody()}</div></div></aside>
+    </div></div>${UI.debug ? debugHTML() : ''}`;
+  if (UI.tab !== 'journal') $('.tabbody').scrollTop = keep;
+  $('.main .play').scrollTop = keepMain;
+  UI.flash = new Set();
+  markCursor();
+  if (UI.tour) tourPlace();
+}
+function debugHTML() {
+  const S = UI.S;
+  return `<div class="dbg">seed ${S.seed} \u00B7 round ${S.round} \u00B7 season ${S.season} \u00B7 first ${S.first} \u00B7 draws ${S.draws} \u00B7 empties ${S.empties}${S.final ? ' FINAL' : ''}<br>pending ${S.pending ? S.pending.t + ' p' + S.pending.p : '-'} \u00B7 queue ${S.queue.slice(0, 4).map(t => t.k + (t.p !== undefined ? t.p : '')).join(' ')} \u00B7 entrance ${S.entrance.length} exit ${S.exit.length} removed ${S.removed.length}
+    <br><button data-a="dump">Dump state</button>${UI.edit ? `<textarea readonly>${BOARD.track.map((p, n) => `${n}|${Math.round(p.x)},${Math.round(p.y)}`).join(' ')}\n\n${BOARD.doors.map(d => `${Math.round(d.x)},${Math.round(d.y)}`).join(' ')}</textarea><br><small>Drag the magenta Wealth Track circles or the cyan door dots, then copy the text into data.js.</small>` : ''}</div>`;
+}
+
+// ---------- modal ----------
+function modal({title, body, x = true, dock = true, buttons = [], cls = ''}) {
+  closeModal();
+  const b = document.createElement('div');
+  b.className = 'backdrop' + (UI.docked && dock ? ' docked' : '');
+  b.innerHTML = `<div class="modal ${cls}" role="dialog" aria-label="${esc(title)}"><div class="mh"><h2>${esc(title)}</h2>${dock ? `<button class="ghost" data-m="dock" title="Dock to side">\u21E5</button>` : ''}${x ? `<button class="ghost" data-m="x" aria-label="Close">\u2715</button>` : ''}</div>
+    <div class="mb">${body}</div><div class="mf">${buttons.map((bt, i) => `<button class="${bt.cls || ''}" data-m="b${i}" ${bt.disabled ? 'disabled' : ''}>${bt.label}</button>`).join('')}${x ? `<button data-m="x">Close</button>` : ''}</div></div>`;
+  b.addEventListener('click', e => {
+    const m = e.target.closest('[data-m]');
+    if (e.target === b && x) return closeModal();
+    if (!m) return;
+    const k = m.dataset.m;
+    if (k === 'x') return closeModal();
+    if (k === 'dock') { UI.docked = !UI.docked; b.classList.toggle('docked', UI.docked); return; }
+    const bt = buttons[+k.slice(1)]; if (bt && bt.fn) { if (!bt.keep) closeModal(); bt.fn(); }
+  });
+  document.body.appendChild(b);
+  UI.modal = {el: b, x};
+}
+function closeModal() { if (UI.modal) { UI.modal.el.remove(); UI.modal = null; } }
+document.addEventListener('keydown', e => { if (e.key === 'Escape' && UI.modal && UI.modal.x) closeModal(); });
+
+// ---------- committing decisions ----------
+function commit(m, human) {
+  const prev = UI.S, N = structuredClone(prev);
+  Engine.apply(N, m);
+  if (human) UI.undo.push(prev);
+  if (N.draws !== prev.draws) UI.undo = [];
+  N.players.forEach((P, p) => {
+    const d = Engine.wealth(P) - Engine.wealth(prev.players[p]), c = P.cash - prev.players[p].cash;
+    if (d || c) UI.flash.add('p' + p);
+    if (d && !UI.auto && !UI.freeze) { const t = Date.now(); UI.deltas.push({p, v: d, t}); setTimeout(() => { UI.deltas = UI.deltas.filter(x => x.t !== t); }, 1800); }
+  });
+  N.rooms.forEach((R, i) => { const O = prev.rooms[i]; if (R.guest !== O.guest || R.key !== O.key || R.rs !== O.rs) UI.flash.add('r' + i); });
+  const fresh = N.log.slice(prev.log.length), kinds = new Set(fresh.map(l => l.kind));
+  Sound(kinds.has('end') ? (N.lost ? 'lose' : 'win') : kinds.has('season') ? 'season' : kinds.has('police') ? 'police' : kinds.has('kill') ? 'kill' : kinds.has('bury') ? 'bury' : kinds.has('round') ? 'round' : kinds.has('money') ? 'coin' : 'card');
+  if (!human && !UI.auto && m.t !== 'lodge' && prev.pending && prev.pending.t !== 'lodge') aiAnnounce(prev.pending.p, fresh.filter(l => l.p === prev.pending.p));
+  UI.S = N; UI.sel = null; UI.kcur = null;
+  if (!UI.auto) {
+    if (N.season !== prev.season && humans().length && !UI.freeze) { UI.hold = true; setTimeout(() => showSeason(N), 400); }
+    else if (N.final && !prev.final && !UI.freeze) toast('Final round: the Entrance Stack is empty for the second time.', 3000);
+    else if (N.round !== prev.round && !UI.freeze && humans().length) toast(`Round ${N.round}`, 1200);
+    if (kinds.has('police') && fresh.some(l => l.text.includes('investigate')) && !UI.freeze) toast(`${ICON.police} ${fresh.filter(l => l.kind === 'police').map(l => l.text).join('\n')}`, 3200);
+  }
+  save();
+  if (!UI.auto) { renderGame(); next(); }
+}
+function undo() {
+  if (!UI.undo.length) return;
+  clearTimeout(UI.timer); UI.gen++;
+  UI.S = UI.undo.pop(); UI.sel = null; UI.kcur = null; UI.hold = false;
+  if (pnp()) UI.viewer = actor(UI.S);
+  save(); renderGame(); next();
+}
+// [pause before an AI action, pause before an AI lodging] in ms
+const AI_SPEED = {slow: [1800, 450], normal: [1000, 260], fast: [420, 90]};
+function next() {
+  clearTimeout(UI.timer);
+  const S = UI.S, gen = UI.gen;
+  if (!S) return;
+  if (S.over) { finishGame(); return; }
+  if (UI.hold) return;
+  const p = actor(S);
+  if (p === null) return;
+  if (!isHuman(p)) {
+    const D = UI.freeze ? [0, 0] : !UI.anim ? [380, 100] : AI_SPEED[UI.aiSpeed] || AI_SPEED.normal;
+    UI.timer = setTimeout(() => {
+      if (gen !== UI.gen || UI.S !== S) return;
+      commit(AI.decide(UI.S, seat(p).level), false);
+    }, S.pending.t === 'lodge' ? D[1] : D[0]);
+  } else if (pnp() && UI.viewer !== p) showPass(p);
+  else if (S.pending.t === 'release' && !UI.sel) { UI.sel = {mode: 'release', ids: AI.minor(S).ids}; renderGame(); }
+}
+function aiAnnounce(p, lines) {
+  if (!lines.length || UI.freeze) return;
+  const old = $('.aiplay'); if (old) old.remove();
+  const d = document.createElement('div');
+  d.className = 'aiplay'; d.style.setProperty('--pc', pcol(p));
+  d.innerHTML = `<i></i><div>${lines.slice(0, 3).map(l => esc(l.text)).join('<br>')}</div>`;
+  document.body.appendChild(d);
+  setTimeout(() => d.remove(), (AI_SPEED[UI.aiSpeed] || AI_SPEED.normal)[0] * 1.6 + 600);
+}
+function showPass(p) {
+  if ($('.pass')) return;
+  const d = document.createElement('div'); d.className = 'pass';
+  d.innerHTML = `<div style="--pc:${pcol(p)}"><h2>Pass to ${esc(pname(p))}</h2><p>Hand the device over: it is ${esc(pname(p))}\u2019s decision.</p><button class="primary" id="passok">I am ${esc(pname(p))}: show my view</button></div>`;
+  document.body.appendChild(d);
+  $('#passok').onclick = () => { d.remove(); UI.viewer = p; renderGame(); next(); };
+}
+
+// ---------- season transition ----------
+const snap = S => S.players.map(P => ({total: Engine.wealth(P), annexes: P.annexes.length - 1, buried: Engine.buriedUnder(P), hand: P.hand.length}));
+function showSeason(N) {
+  if (N !== UI.S) { UI.hold = false; return next(); }
+  const was = UI.seasonSnap, now = snap(N);
+  const rows = [['Wealth', 'total', 'F'], ['Annexes', 'annexes', ''], ['Buried', 'buried', ''], ['Accomplices', 'hand', '']];
+  const cell = (p, k, suf) => `<td><b>${now[p][k]}</b><small>${suf}</small>${was ? (d => d ? ` <span class="${d > 0 ? 'up' : 'dn'}">${d > 0 ? '+' : '\u2212'}${Math.abs(d)}</span>` : '')(now[p][k] - was[p][k]) : ''}</td>`;
+  const d = document.createElement('div');
+  d.className = 'chcard' + (UI.anim ? '' : ' still');
+  d.innerHTML = `<div class="chin"><div class="chk">The first season is over</div><h2>Second season</h2>
+    <div class="chsub">The travelers who left alive come back: the Exit Stack is the new Entrance Stack. When it runs out, the game ends after that round.</div>
+    <table class="res chrecap"><tr><th></th>${N.players.map((_, p) => `<th style="color:${pcol(p)}">${esc(who(p))}</th>`).join('')}</tr>${rows.map(([lab, k, suf]) => `<tr><td>${lab}</td>${N.players.map((_, p) => cell(p, k, suf)).join('')}</tr>`).join('')}</table>
+    <div class="muted">Tap or press Enter to continue.</div></div>`;
+  document.body.appendChild(d);
+  let done = false;
+  const go = () => { if (done) return; done = true; d.classList.add('out'); setTimeout(() => d.remove(), 300); UI.seasonSnap = now; save(); UI.hold = false; renderGame(); next(); };
+  d.onclick = go;
+  if (!UI.freeze) setTimeout(go, 9000);
+}
+
+// ---------- end of game ----------
+function finishGame() {
+  if (UI.S.done) return;
+  UI.S.done = true; save();
+  recordStats(UI.S);
+  if (!UI.auto) setTimeout(showResult, UI.freeze ? 0 : 900);
+}
+const BONUS_NAMES = {park: 'Park', grocery: 'Grocery', bishopric: 'Bishopric', stables: 'Stables', greenhouse: 'Greenhouse'};
+function showResult() {
+  const S = UI.S, R = S.result, rows = R.rows.slice().sort((a, b) => a.rank - b.rank || b.total - a.total), top = rows[0];
+  const h = humans(), me = h.length === 1 ? h[0] : -1, mine = R.rows[me];
+  const head = S.lost ? 'Arrested!' : S.n === 1 ? `${R.rows[0].total}F: ${R.rating}` : me >= 0 ? (mine.rank === 1 ? (rows.filter(r => r.rank === 1).length > 1 ? 'A shared victory' : 'Victory!') : `${ordinal(mine.rank)} place`) : `${esc(rows.filter(r => r.rank === 1).map(r => r.name).join(' & '))} ${rows.filter(r => r.rank === 1).length > 1 ? 'share the win' : 'wins'}`;
+  const max = Math.max(1, ...rows.map(r => r.total));
+  const table = rows.map((r, k) => `<div class="rrow ${r.rank === 1 ? 'win' : ''}" style="--pc:${SEAT_HEX[r.color]};--w:${r.total / max * 100}%;--d:${k * 180}ms">
+    <span class="rk">${r.rank}</span><b>${esc(you(r.p) ? 'You' : r.name)}</b><span class="rbar"><i></i></span><span class="rt">${r.total}F</span>
+    <small>${r.cash}F cash + ${plural(r.checks, 'check')}${Object.entries(r.bonus).filter(([, v]) => v).map(([k, v]) => ` \u00B7 ${BONUS_NAMES[k]} +${v}`).join('')} \u00B7 ${r.buried} buried</small></div>`).join('');
+  modal({title: S.n === 1 ? 'Final booty' : 'Final tally', dock: false, cls: 'result', body: `<div class="banner ${S.lost ? 'lost' : ''}">${head}</div>${table}
+    ${S.n > 1 && rows.filter(r => r.rank === top.rank && r.total === top.total).length > 1 ? '<p class="muted">Tied on money: the most corpses under their own annexes breaks the tie.</p>' : ''}
+    ${S.n === 1 && !S.lost ? `<p class="muted">Long game ratings: 110F worrying \u00B7 130F hazardous \u00B7 150F evil \u00B7 170F+ demonic innkeeper.</p>` : ''}`,
+  buttons: [{label: '\u{1F4CA} Statistics', cls: 'primary', fn: showStats}, {label: '\u{1F4E4} Share result', fn: showShare}, {label: 'New game', fn: landing}]});
+}
+const ordinal = n => n + (['th', 'st', 'nd', 'rd'][n % 100 > 10 && n % 100 < 14 ? 0 : n % 10] || 'th');
+
+// ---------- interaction ----------
+function startSel(sel) { UI.sel = sel; if (sel.pay === undefined && ['bribe', 'kill', 'build', 'bury'].includes(sel.mode)) sel.pay = Engine.suggestPay(UI.S, actor(UI.S), selMove()) || []; renderGame(); }
+function repay() { const sel = UI.sel; sel.pay = Engine.suggestPay(UI.S, actor(UI.S), selMove()) || sel.pay.slice(0, selCost()); }
+function defaultDest(used) {
+  const S = UI.S, p = actor(S), t = Engine.annexTargets(S, used);
+  return t.filter(a => a.p === p && a.i > 0).sort((a, b) => b.free - a.free)[0] || t.find(a => a.p === p) || t[0] || null;
+}
+function onRoom(i) {
+  const S = UI.S, R = S.rooms[i];
+  if (!myTurn()) return R.guest ? showCard(R.guest) : null;
+  const pd = S.pending, sel = UI.sel;
+  if (pd.t === 'lodge') { if (tgtRoom(i)) commit({t: 'lodge', room: i}, true); return; }
+  if (pd.t === 'rs') { if (tgtRoom(i)) commit({t: 'rs', room: i}, true); return; }
+  if (pd.t === 'monk') { if (tgtRoom(i)) commit({t: 'monk', room: i}, true); return; }
+  if (pd.t !== 'turn') return R.guest ? showCard(R.guest) : null;
+  if (!R.guest) return;
+  if (sel && (sel.mode === 'bribe' || sel.mode === 'kill') && sel.multi) {
+    sel.rooms = sel.rooms.includes(i) ? sel.rooms.filter(x => x !== i) : [...sel.rooms, i];
+    if (!sel.rooms.length) { UI.sel = null; return renderGame(); }
+    repay(); return renderGame();
+  }
+  if (sel && sel.room === i && sel.mode === 'choose') { UI.sel = null; return renderGame(); }
+  if (!tgtRoom(i)) return showCard(R.guest);
+  startSel({mode: 'choose', room: i});
+}
+function onHand(id) {
+  const S = UI.S, sel = UI.sel;
+  if (!myTurn()) return showCard(id);
+  const pd = S.pending;
+  if (pd.t === 'release') {
+    sel.ids = sel.ids.includes(id) ? sel.ids.filter(x => x !== id) : [...sel.ids, id].slice(-pd.k);
+    return renderGame();
+  }
+  if (pd.t !== 'turn') return showCard(id);
+  if (sel && ['bribe', 'kill', 'build', 'bury'].includes(sel.mode)) {
+    if (id === sel.card) return;
+    const need = selCost();
+    if (sel.pay.includes(id)) sel.pay = sel.pay.filter(x => x !== id);
+    else { sel.pay.push(id); if (sel.pay.length > need) sel.pay.shift(); }
+    return renderGame();
+  }
+  if (Engine.options(S, pd.p).build.includes(id)) return startSel({mode: 'build', card: id});
+  showCard(id);
+}
+function onCorpse(id) {
+  const S = UI.S, sel = UI.sel;
+  if (!myTurn() || S.pending.t !== 'turn') return showCard(id, true);
+  if (sel && sel.mode === 'bury') {
+    if (!Engine.count(S.players[S.pending.p], 'crypt')) return;
+    if (sel.items.some(it => it.id === id)) { sel.items = sel.items.filter(it => it.id !== id); if (!sel.items.length) UI.sel = null; else repay(); return renderGame(); }
+    const d = defaultDest(sel.items);
+    if (!d) return toast('No free annex left');
+    sel.items.push({id, owner: d.p, annex: d.i}); repay(); return renderGame();
+  }
+  if (!tgtCorpse(id)) return showCard(id, true);
+  const d = defaultDest([]);
+  startSel({mode: 'bury', items: [{id, owner: d ? d.p : undefined, annex: d ? d.i : undefined}]});
+}
+function onAnnex(q, i) {
+  const S = UI.S, sel = UI.sel;
+  if (sel && sel.mode === 'bury' && myTurn()) {
+    if (!tgtAnnex(q, i)) return toast('That annex is full');
+    const it = sel.items[sel.items.length - 1]; it.owner = q; it.annex = i; return renderGame();
+  }
+  const a = S.players[q].annexes[i];
+  modal({title: a.id === 'barn' ? `${pname(q)}\u2019s barn` : `${pname(q)}\u2019s ${T(a.id).annex}`, body: `<div class="cardpop">${a.id === 'barn' ? barnSVG() : cardSVG(a.id)}<div>
+    <p>${a.id === 'barn' ? 'The player aid is a rank-1 annex: one corpse can be buried under it.' : esc(T(a.id).text)}</p><p>Capacity ${Engine.annexRank(a)}: ${a.under.length ? a.under.map(id => `${esc(T(id).name)} (${T(id).money}F)`).join(', ') : 'nothing buried yet'}.</p>
+    <p class="muted">Anyone may bury under any annex. Burying under another player\u2019s annex splits the money in half.</p></div></div>`});
+}
+function onBistro() {
+  if (!myTurn() || UI.S.pending.t !== 'turn') return modal({title: 'The bistro', body: `<p>${plural(UI.S.bistro.length, 'peasant')} drinking at the bistro. Peasants are rank 0 and carry 4F. Bribe 1 or 2 at once for free (up to 4 with the Brewery), or kill one for free.</p><p class="muted">Peasants used to pay for an action always come back here.</p>`});
+  if (!UI.S.bistro.length) return toast('The bistro is empty');
+  startSel({mode: 'bistro'});
+}
+function onOpt(o) {
+  const S = UI.S, sel = UI.sel, pd = S.pending, p = pd && pd.p;
+  if (o === 'cancel') { UI.sel = null; return renderGame(); }
+  if (o === 'autolodge') { let g = 0; let X = UI.S; const prev = X; X = structuredClone(X); while (X.pending && X.pending.t === 'lodge' && X.pending.p === p && g++ < 12) Engine.apply(X, AI.minor(X)); UI.S = prev; return commitState(X); }
+  if (o === 'pass') return startSel({mode: 'pass', k: 0});
+  if (o === 'k+') { sel.k = (sel.k || 0) + 1; return renderGame(); }
+  if (o === 'k-') { sel.k = (sel.k || 0) - 1; return renderGame(); }
+  if (o === 'bribe' || o === 'kill') {
+    const multi = Engine.count(S.players[p], o === 'bribe' ? 'store' : 'butcher') > 0;
+    UI.sel = {mode: o, rooms: [sel.room], multi}; repay(); return renderGame();
+  }
+  if (o.startsWith('peas:')) return commit({t: 'peasants', n: +o.slice(5), pay: []}, true);
+  if (o === 'killpeas') return commit({t: 'killPeasant', pay: []}, true);
+  if (o.startsWith('grave:')) return commit({t: 'grave', checks: +o.slice(6)}, true);
+  if (o === 'release') return commit({t: 'release', ids: sel.ids}, true);
+  if (o === 'confirm') { const m = selMove(); if (m && !Engine.check(S, m)) commit(m, true); return; }
+}
+function commitState(X) {
+  // several engine steps at once (auto-lodging): treat as one undoable human move
+  const prev = UI.S;
+  UI.undo = [];
+  UI.S = X; UI.sel = null;
+  X.rooms.forEach((R, i) => { if (R.guest !== prev.rooms[i].guest) UI.flash.add('r' + i); });
+  Sound('card'); save(); renderGame(); next();
+}
+function showCard(id, dead) {
+  const t = T(id), apt = APTITUDE[t.color];
+  modal({title: t.name, body: `<div class="cardpop"><div class="flip">${cardSVG(id, {dead: !!dead})}${cardSVG(id, {dead: !dead})}</div><div>
+    <p><b>${COLOR_NAMES[t.color][0].toUpperCase() + COLOR_NAMES[t.color].slice(1)}</b>, rank ${t.rank}, ${t.money}F in his pockets.</p>
+    <p>${apt ? `Aptitude: <b>${ICON[apt]} ${ACTION_NAMES[apt]}</b> (returns to hand when used to pay for it).` : 'No aptitude: always leaves when used to pay.'}</p>
+    ${t.annex ? `<p>Annex: <b>${esc(t.annex)}</b> (rank ${t.rank}): ${esc(t.text)}</p>` : `<p>${t.color === 'grey' ? 'Police cannot become annexes. A policeman in a room at the end of the round starts an investigation.' : 'Peasants cannot become annexes and always return to the bistro.'}</p>`}
+    <p class="muted">Bribe or kill: ${plural(t.rank, 'accomplice')}. Bury: ${plural(t.rank, 'accomplice')}, holding ${t.money}F.</p></div></div>`});
+}
+function showPlayer(p) {
+  const S = UI.S, P = S.players[p];
+  modal({title: `${who(p)} (${Engine.wealth(P)}F)`, cls: 'wide', body: `<p>${P.cash}F cash \u00B7 ${plural(P.checks, 'check')} \u00B7 ${plural(Engine.keysOf(S, p), 'room')} \u00B7 ${Engine.buriedUnder(P)} buried under their annexes</p>
+    <h3 class="sh">Hand</h3><div class="cards popcards">${P.hand.map(id => cardSVG(id)).join('') || '<span class="muted">empty</span>'}</div>
+    <h3 class="sh">Annexes</h3><div class="cards popcards">${P.annexes.map((a, i) => annexHTML(p, i, true)).join('')}</div>
+    <h3 class="sh">Unburied corpses</h3><div class="cards popcards">${P.corpses.map(id => cardSVG(id, {dead: true})).join('') || '<span class="muted">none</span>'}</div>`});
+}
+function showExit() {
+  const S = UI.S, ec = exitCounts(S);
+  modal({title: `Exit Stack (${S.exit.length})`, body: `<p>${['blue', 'red', 'purple', 'green', 'grey'].map(c => `<span class="chip" style="--c:${COL_HEX[c]}">${COLOR_NAMES[c]} ${ec[c] || 0}</span>`).join(' ')}</p>
+    <p class="muted">Travelers who left the inn alive and accomplices spent on actions. ${S.season === 1 ? 'When the Entrance Stack runs out, this stack is shuffled into the new one.' : 'At the end of the game the Park, Grocery, Bishopric and Stables pay 4F per card of their colour here.'}</p>
+    <div class="cards popcards">${S.exit.slice().sort((a, b) => COLORS.indexOf(T(a).color) - COLORS.indexOf(T(b).color) || T(a).rank - T(b).rank).map(id => cardSVG(id)).join('')}</div>`, cls: 'wide'});
+}
+function showEntrance() {
+  const S = UI.S, top = S.entrance[0];
+  modal({title: `Entrance Stack (${S.entrance.length})`, body: `<div class="cardpop">${top ? cardSVG(top) : ''}<div><p>${top ? `The next traveler is the <b>${esc(T(top).name)}</b>: the stack is face up, so only its top card is known.` : 'The stack is empty.'}</p>
+    <p>${S.season === 1 ? 'First season: when it runs out, the Exit Stack is shuffled into a new Entrance Stack.' : 'Second season: when it runs out, that round is the last one.'}</p><p class="muted">${S.removed.length} cards were set aside unseen at setup.</p></div></div>`});
+}
+function showExplain(k) {
+  if (k === 'police') return modal({title: 'The police', body: `<p>If at least one policeman (grey) is still in a room of the inn at the end of the round, the police investigate: each player pays the village gravedigger 10F per unburied corpse (checks accepted), and those corpses are discarded.</p><p>Kill a policeman or bribe him to send the police away, or bury your corpses before the end of the round.</p>`});
+  const S = UI.S;
+  modal({title: `Round ${S.round}`, body: `<p>Season ${S.season} of 2${S.final ? ', <b>final round</b>' : ''}. ${S.entrance.length} cards are left in the Entrance Stack and ${S.exit.length} in the Exit Stack.</p>
+    <p>Each round: the first player lodges travelers in every open room; everyone takes two actions in turn; then the police investigate, guests leave (1F per occupied room of your colour) and you pay 1F wages per card in hand.</p>
+    <p class="muted">The game ends after the round in which the Entrance Stack runs out for the second time.</p>`});
+}
+function showBoard() {
+  modal({title: 'The inn', cls: 'wide', body: `<div class="bigboard">${boardSVG(true)}</div><p class="muted">Discs on the Wealth Track show each player\u2019s cash (max 40F). Doors show who owns each room and any Room Service token.</p>`});
+}
+
+document.addEventListener('click', e => {
+  if (!$('#game') || e.target.closest('.modal') || e.target.closest('#tour')) return;
+  const el = e.target.closest('[data-a]'); if (!el) return;
+  const a = el.dataset.a;
+  if (UI.edit && e.target.closest('[data-e]')) return;
+  switch (a) {
+    case 'menu': return showMenu();
+    case 'help': return showHelp();
+    case 'mute': UI.mute = !UI.mute; store.set('mute', UI.mute); return renderGame();
+    case 'tab': UI.tab = el.dataset.t; UI.sheetMin = false; return renderGame();
+    case 'sheet': UI.sheetMin = !UI.sheetMin; return renderGame();
+    case 'room': return onRoom(+el.dataset.i);
+    case 'hand': return onHand(el.dataset.id);
+    case 'corpse': return onCorpse(el.dataset.id);
+    case 'annex': return onAnnex(+el.dataset.p, +el.dataset.i);
+    case 'bistro': return onBistro();
+    case 'entrance': return showEntrance();
+    case 'exit': return showExit();
+    case 'bigboard': return showBoard();
+    case 'opt': return onOpt(el.dataset.o);
+    case 'dest': return onAnnex(+el.dataset.p, +el.dataset.i);
+    case 'undo': return undo();
+    case 'player': return showPlayer(+el.dataset.p);
+    case 'explain': return showExplain(el.dataset.k);
+    case 'results': return showResult();
+    case 'newgame': return landing();
+    case 'jroom': UI.flash.add('r' + el.dataset.i); return renderGame();
+    case 'dump': console.log(JSON.stringify(UI.S)); return toast('State written to the console');
+  }
+});
+
+// ---------- ?edit: drag Wealth Track spaces and doors on the board ----------
+let drag = null;
+document.addEventListener('pointerdown', e => { if (!UI.edit) return; const t = e.target.closest('[data-e]'); if (t) { drag = t.dataset.e; e.preventDefault(); } });
+document.addEventListener('pointermove', e => {
+  if (!drag) return;
+  const svg = $('.boardwrap svg'); if (!svg) return;
+  const pt = svg.createSVGPoint(); pt.x = e.clientX; pt.y = e.clientY;
+  const q = pt.matrixTransform(svg.getScreenCTM().inverse()), o = drag[0] === 't' ? BOARD.track[+drag.slice(1)] : BOARD.doors[+drag.slice(1)];
+  o.x = Math.round(q.x); o.y = Math.round(q.y); renderGame();
+});
+document.addEventListener('pointerup', () => { drag = null; });
+
+// ---------- menu, help, changelog ----------
+function showMenu() {
+  modal({title: 'Menu', dock: false, body: `<div class="menu">
+    <label class="check"><input type="checkbox" id="m-mute" ${UI.mute ? '' : 'checked'}> Sound</label>
+    <label class="check"><input type="checkbox" id="m-anim" ${UI.anim ? 'checked' : ''}> Animations</label>
+    ${hasArt() ? `<label class="check"><input type="checkbox" id="m-art" ${UI.art ? 'checked' : ''}> Card art (photos)</label>` : ''}
+    <label class="field">Opponent speed <select id="m-speed">${['slow', 'normal', 'fast'].map(s => `<option ${UI.aiSpeed === s ? 'selected' : ''}>${s}</option>`).join('')}</select></label></div>`,
+  buttons: [{label: 'New game', fn: landing}, {label: 'How to play', fn: showHelp}, {label: '\u{1F9ED} Guided tour', fn: tourStart}, {label: 'Statistics', fn: showStats},
+    {label: 'Keyboard shortcuts', fn: showKeys}, {label: "What's new", fn: showChangelog}, ...(canOfferInstall() ? [{label: 'Install app', fn: doInstall}] : []),
+    {label: 'Results so far', fn: () => { const R = Engine.result(UI.S); modal({title: 'Current standing', body: `<table class="res"><tr><th></th><th>Cash</th><th>Checks</th><th>Total</th><th>Buried</th></tr>${R.rows.map(r => `<tr><td style="color:${SEAT_HEX[r.color]}"><b>${esc(who(r.p))}</b></td><td>${r.cash}F</td><td>${r.checks}</td><td><b>${r.total}F</b></td><td>${r.buried}</td></tr>`).join('')}</table><p class="muted">End-of-game annexes are not counted yet.</p>`}); }}]});
+  $('#m-anim').onchange = e => { UI.anim = e.target.checked; store.set('anim', UI.anim); renderGame(); };
+  $('#m-mute').onchange = e => { UI.mute = !e.target.checked; store.set('mute', UI.mute); renderGame(); };
+  $('#m-speed').onchange = e => { UI.aiSpeed = e.target.value; store.set('aiSpeed', UI.aiSpeed); };
+  if (hasArt()) $('#m-art').onchange = e => { UI.art = e.target.checked; store.set('art', UI.art); renderGame(); };
+}
+function showChangelog() {
+  const list = CHANGELOG.map((r, i) => `<section><h3>v${esc(r.v)}${i === 0 ? ' <span class="cl-new">Current</span>' : ''}<small>${esc(r.date)}</small></h3>`
+    + `<ul>${r.items.map(t => `<li>${esc(t)}</li>`).join('')}</ul></section>`).join('');
+  modal({title: "What's new", dock: false, body: `<p class="muted">Features and fixes in each version, newest first.</p><div class="cl">${list}</div>`});
+}
+function showHelp() {
+  modal({title: 'How to play', body: `
+    <p>France, 1831. Your family runs an inn and robs its guests. The richest innkeeper at the end wins: cash on the Wealth Track (max 40F) plus 10F per check.</p>
+    <p><b>Each round</b>: the first player lodges a traveler in every open room. Then everyone takes <b>two actions</b>, one at a time in turn order:</p>
+    <ul><li>${ICON.bribe} <b>Bribe</b> a traveler in a room (or 1\u20132 peasants from the bistro) into your hand as an accomplice.</li>
+    <li>${ICON.build} <b>Build</b> the annex shown on a card in your hand. Annexes give money or powers, and corpses are buried under them.</li>
+    <li>${ICON.kill} <b>Kill</b> a guest: he becomes a corpse in front of you.</li>
+    <li>${ICON.bury} <b>Bury</b> a corpse under any annex with room (an annex holds as many corpses as its rank; your barn holds 1) and take the money in his pockets, split in half under another player\u2019s annex.</li>
+    <li>${ICON.pass} <b>Pass</b>, optionally laundering cash into checks or checks into cash.</li></ul>
+    <p><b>Paying</b>: an action costs as many cards from your hand as the target\u2019s rank. Cards whose aptitude matches the action come back to hand (merchants ${ICON.bribe}, artisans ${ICON.build}, police ${ICON.kill}, religious ${ICON.bury}); peasants go back to the bistro; the others leave by the Exit Stack.</p>
+    <p><b>End of round</b>: if a policeman is still in the inn, every unburied corpse costs 10F. Then you earn 1F per occupied room of your colour, the guests leave, and you pay 1F wages per card in hand (no checks; unpaid accomplices leave).</p>
+    <p><b>End of the game</b>: when the Entrance Stack runs out the first time, the Exit Stack becomes the new one (second season). The second time, that round is the last. Unburied corpses cost 10F, end-of-game annexes score, and the tie-break is the most corpses under your own annexes.</p>
+    <p class="muted">Undo works until a new traveler is drawn. Hands are public, like at the table.</p>
+    <p><a href="${RULES_URL}" target="_blank" rel="noopener">The Bloody Inn on BoardGameGeek (official rules in the files section)</a></p>`});
+}
+
+// ---------- installable app ----------
+let installEvt = null;
+const standalone = () => matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
+const canOfferInstall = () => /^https?:$/.test(location.protocol) && !standalone() && !!document.querySelector('link[rel="manifest"]');
+function refreshInstall() { const b = $('#install'); if (b) b.hidden = !canOfferInstall(); }
+addEventListener('beforeinstallprompt', e => { e.preventDefault(); installEvt = e; refreshInstall(); });
+addEventListener('appinstalled', () => { installEvt = null; toast('The Bloody Inn installed'); refreshInstall(); });
+function doInstall() {
+  if (installEvt) {
+    const ev = installEvt; installEvt = null;
+    ev.prompt();
+    ev.userChoice.then(c => { if (c.outcome !== 'accepted') installEvt = ev; refreshInstall(); }).catch(() => {});
+    return;
+  }
+  const ios = /iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  modal({title: 'Install as an app', dock: false, body: ios
+    ? `<p>In <b>Safari</b>, tap the <b>Share</b> button (the square with an arrow), then <b>Add to Home Screen</b>.</p>`
+    : `<p><b>Android (Chrome):</b> open the \u22EE menu and choose <b>Install app</b> or <b>Add to Home screen</b>.</p>
+       <p><b>Laptop (Edge or Chrome):</b> click the install icon at the right of the address bar, or open the menu and choose <b>Apps \u2192 Install The Bloody Inn</b>.</p>`
+    + `<p class="muted">Once installed it opens in its own window, with its own icon, and plays offline. Saved games and statistics stay on this device.</p>`});
+}
+function pwaInit() {
+  if (Q.has('test') || Q.has('selfplay')) return;
+  const last = store.get('lastVersion', null);
+  if (last && last !== APP_VERSION) setTimeout(() => toast(`Updated to v${APP_VERSION}`), 1200);
+  store.set('lastVersion', APP_VERSION);
+  const man = document.querySelector('link[rel="manifest"]'), say = s => { if (Q.has('swcheck')) document.title = 'SWCHECK ' + s; };
+  if (!/^https?:$/.test(location.protocol) || !('serviceWorker' in navigator) || !man) { say('skipped ' + location.protocol + (man ? '' : ' no-manifest')); return; }
+  say('pending');
+  navigator.serviceWorker.register('sw.js').then(() => navigator.serviceWorker.ready).then(reg => {
+    if (!Q.has('swcheck')) return;
+    return fetch(man.href).then(r => r.json()).then(m => say(`registered active=${reg.active && reg.active.state} scope=${reg.scope} manifest=${m.name} icons=${(m.icons || []).length}`));
+  }).catch(err => say('error ' + err.message));
+}
+addEventListener('load', pwaInit);
+addEventListener('load', artUnlock);
+
+// ---------- save, stats ----------
+function save() { if (!UI.auto && !UI.practice && UI.S && !Q.has('test') && !UI.freeze) store.set('save', {S: UI.S, viewer: UI.viewer, seasonSnap: UI.seasonSnap}); }
+const STATS0 = () => ({games: 0, byLevel: {}, byN: {}, best: 0, sum: 0, streak: 0, bestStreak: 0, solo: {games: 0, best: 0, ratings: {}}, pnp: 0, recent: []});
+function recordStats(S) {
+  if (UI.auto || UI.practice || UI.freeze) return;
+  const h = humans(); if (!h.length) return;
+  const st = {...STATS0(), ...store.get('stats', {})}, R = S.result;
+  st.games++;
+  const g = {d: new Date().toISOString().slice(0, 10), n: S.n, long: S.opts.long, rounds: S.round};
+  if (S.n === 1) {
+    const tot = R.rows[0].total;
+    st.solo.games++; st.solo.best = Math.max(st.solo.best, S.lost ? 0 : tot); st.solo.ratings[R.rating] = (st.solo.ratings[R.rating] || 0) + 1;
+    Object.assign(g, {opp: 'solo', total: tot, r: S.lost ? 'l' : 'w', rating: R.rating});
+  } else if (h.length > 1) { st.pnp++; Object.assign(g, {opp: 'pnp', winner: R.rows.filter(r => r.rank === 1).map(r => r.name).join(' & ')}); }
+  else {
+    const me = R.rows[h[0]], lv = S.seats.filter(s => s.type === 'ai').map(s => s.level), level = lv.every(l => l === lv[0]) ? lv[0] : 'mixed';
+    const shared = R.rows.filter(r => r.rank === 1).length > 1, r = me.rank === 1 ? (shared ? 't' : 'w') : 'l';
+    const o = st.byLevel[level] || (st.byLevel[level] = {w: 0, l: 0, t: 0}); o[r]++;
+    const on = st.byN[S.n] || (st.byN[S.n] = {w: 0, l: 0, t: 0}); on[r]++;
+    st.best = Math.max(st.best, me.total); st.sum += me.total;
+    st.streak = r === 'w' ? st.streak + 1 : 0; st.bestStreak = Math.max(st.bestStreak, st.streak);
+    Object.assign(g, {opp: level, total: me.total, place: me.rank, r});
+  }
+  st.recent = [g, ...st.recent].slice(0, 12);
+  store.set('stats', st);
+}
+function showStats() {
+  const st = {...STATS0(), ...store.get('stats', {})};
+  const wlt = o => o ? `${o.w} won \u00B7 ${o.l} lost${o.t ? ` \u00B7 ${o.t} shared` : ''}` : '\u2014';
+  const ai = Object.values(st.byLevel).reduce((a, o) => ({w: a.w + o.w, n: a.n + o.w + o.l + o.t}), {w: 0, n: 0});
+  const rate = ai.n ? Math.round(ai.w / ai.n * 100) + '%' : '\u2014';
+  const RN = {w: 'Won', l: 'Lost', t: 'Shared'};
+  const recent = st.recent.map(g => `<tr><td>${esc(g.d)}</td><td>${g.opp === 'solo' ? 'Solo' : g.opp === 'pnp' ? `Pass and play, ${g.n} players` : `${g.n} players vs AI ${g.opp}`}</td>
+    <td class="${g.r || ''}">${g.opp === 'solo' ? `${g.total}F ${esc(g.rating)}` : g.opp === 'pnp' ? esc(g.winner) + ' won' : `${RN[g.r]} (${ordinal(g.place)}, ${g.total}F)`}</td><td class="muted">${g.long ? 'long' : 'short'}, ${g.rounds} rounds</td></tr>`).join('');
+  modal({title: 'Statistics', body: `<div class="kpis"><div><b>${st.games}</b>Games</div><div><b>${rate}</b>Win rate vs AI</div><div><b>${st.streak}</b>Current streak</div><div><b>${st.best}F</b>Best booty</div></div>
+    <table class="res">${['easy', 'normal', 'hard', 'mixed'].filter(l => l !== 'mixed' || st.byLevel.mixed).map(l => `<tr><td>vs AI ${l}</td><td>${wlt(st.byLevel[l])}</td></tr>`).join('')}
+    ${[2, 3, 4].map(n => `<tr><td>${n} players</td><td>${wlt(st.byN[n])}</td></tr>`).join('')}
+    <tr><td>Average booty vs AI</td><td>${ai.n ? Math.round(st.sum / ai.n) + 'F' : '\u2014'} \u00B7 best streak ${st.bestStreak}</td></tr>
+    <tr><td>Solo</td><td>${st.solo.games ? `${st.solo.games} games, best ${st.solo.best}F` : '\u2014'}</td></tr><tr><td>Pass and play</td><td>${plural(st.pnp, 'game')}</td></tr></table>
+    ${recent ? `<h3 class="sh">Recent games</h3><table class="res recent">${recent}</table>` : ''}<p class="muted">Stored only in this browser. Practice games from the guided tour are not counted.</p>`,
+  buttons: [{label: 'Reset', fn: () => { store.del('stats'); showStats(); }}]});
+}
+
+// ---------- landing ----------
+const AI_NAMES = ['Anna', 'Madeline', 'Sebastien', 'Noelie', 'Laureline', 'Mae', 'Keo'];
+function defaultSetup() { return {n: 4, opp: 'normal', long: true, unlimited: false, fcfs: false, names: ['You', 'Anna', 'Madeline', 'Sebastien'], custom: null}; }
+function seatsFor(o) {
+  if (o.custom && o.custom.length === o.n) return o.custom.map(s => ({...s}));
+  return Array.from({length: o.n}, (_, i) => o.opp === 'pnp' ? {name: `Player ${i + 1}`, type: 'human', level: 'normal'}
+    : i === 0 ? {name: 'You', type: 'human', level: 'normal'} : {name: AI_NAMES[i - 1], type: 'ai', level: o.opp});
+}
+function landing() {
+  if (UI.tour) tourEnd(false);
+  clearTimeout(UI.timer); UI.gen++; closeModal(); UI.hold = false; UI.practice = false; tipHide();
+  $$('.chcard, .pass, .aiplay').forEach(x => x.remove());
+  const o = UI.setup || {...defaultSetup(), ...store.get('setup', {})};
+  UI.setup = o;
+  const sv = store.get('save', null), canCont = sv && sv.S && !sv.S.over;
+  const seg = (k, vals) => `<div class="seg">${vals.map(([v, l]) => `<button class="${o[k] === v ? 'on' : ''}" data-set="${k}" data-v="${v}">${l}</button>`).join('')}</div>`;
+  const seats = seatsFor(o);
+  const seatRows = seats.map((s, i) => `<div class="seatrow" style="--pc:${SEAT_HEX[SEAT_COLORS[i]]}"><i></i><input data-seat="${i}" data-k="name" value="${esc(s.name)}" maxlength="14" aria-label="Seat ${i + 1} name">
+    <select data-seat="${i}" data-k="kind" aria-label="Seat ${i + 1} player">${[['human', 'Human'], ['easy', 'AI Easy'], ['normal', 'AI Normal'], ['hard', 'AI Hard']].map(([v, l]) => `<option value="${v}" ${(s.type === 'human' ? 'human' : s.level) === v ? 'selected' : ''}>${l}</option>`).join('')}</select></div>`).join('');
+  $('#app').innerHTML = `<div class="landing"><div class="art" role="img" aria-label="Illustration: a lonely inn at night under a blood moon"></div><div class="box">
+    <h1>The Bloody Inn</h1><div class="sub">Unofficial fan version \u00B7 Peyrebeille, 1831</div>
+    <div class="field"><label>Players</label>${seg('n', [[1, 'Solo'], [2, '2'], [3, '3'], [4, '4']])}</div>
+    ${o.n > 1 ? `<div class="field"><label>Opponents</label>${seg('opp', [['easy', 'AI Easy'], ['normal', 'AI Normal'], ['hard', 'AI Hard'], ['pnp', 'Pass and play']])}</div>` : ''}
+    <details class="field seats" ${o.custom ? 'open' : ''}><summary>Seats and names</summary>${seatRows}<p class="muted">Mix humans and AI levels freely. Colours follow the seats.</p></details>
+    <div class="field"><label>Game</label>${seg('long', [[true, 'Long game'], [false, 'Short game']])}</div>
+    <div class="field"><label class="check"><input type="checkbox" id="o-unl" ${o.unlimited ? 'checked' : ''}> Unlimited Wealth (more than 40F becomes checks)</label>
+      <label class="check"><input type="checkbox" id="o-fcfs" ${o.fcfs ? 'checked' : ''}> First Come, First Served (travelers fill rooms in order)</label></div>
+    <div class="row"><button class="primary" id="go">New game</button>${canCont ? '<button id="cont">Continue</button>' : ''}</div>
+    <div class="row" style="margin-top:8px"><button id="howto">How to play</button><button id="tourbtn">\u{1F9ED} Guided tour</button><button id="stats">Statistics</button></div>
+    ${store.get('tourDone', false) ? '' : '<p class="tourhint">New here? Try the <b>Guided tour</b>: a short practice game with tips on the real board.</p>'}
+    <div class="row" style="margin-top:8px"><button id="install" ${canOfferInstall() ? '' : 'hidden'}>\u{1F4F2} Install app</button></div>
+    <div class="foot"><a href="${RULES_URL}" target="_blank" rel="noopener">The game on BoardGameGeek</a> \u00B7 designed by Nicolas Robert, published by Pearl Games</div></div>
+    <p class="l-ver"><button type="button" id="ver" aria-haspopup="dialog" title="What's new: version history">v${APP_VERSION}</button> \u00B7 promptcrafted by BD</p></div>`;
+  $('#install').onclick = doInstall;
+  const parse = v => v === 'true' ? true : v === 'false' ? false : /^\d$/.test(v) ? +v : v;
+  $$('[data-set]').forEach(b => b.onclick = () => { o[b.dataset.set] = parse(b.dataset.v); o.custom = null; store.set('setup', o); landing(); });
+  $$('[data-seat]').forEach(inp => inp.onchange = () => {
+    const cur = seatsFor(o), i = +inp.dataset.seat;
+    if (inp.dataset.k === 'name') cur[i].name = inp.value.trim() || `Player ${i + 1}`;
+    else { const v = inp.value; cur[i].type = v === 'human' ? 'human' : 'ai'; cur[i].level = v === 'human' ? 'normal' : v; }
+    o.custom = cur; store.set('setup', o);
+  });
+  $('#o-unl').onchange = e => { o.unlimited = e.target.checked; store.set('setup', o); };
+  $('#o-fcfs').onchange = e => { o.fcfs = e.target.checked; store.set('setup', o); };
+  $('#go').onclick = () => startGame(o);
+  if (canCont) $('#cont').onclick = () => { UI.S = sv.S; UI.viewer = sv.viewer || 0; UI.seasonSnap = sv.seasonSnap || null; UI.undo = []; UI.gen++; UI.hold = false; UI.sel = null; renderGame(); next(); };
+  $('#tourbtn').onclick = tourStart;
+  $('#howto').onclick = showHelp; $('#stats').onclick = showStats; $('#ver').onclick = showChangelog;
+}
+function startGame(o, seed) {
+  const seats = seatsFor(o);
+  UI.S = Engine.newGame({seed: seed ?? (Q.has('seed') ? +Q.get('seed') : undefined), long: o.long, unlimited: o.unlimited, fcfs: o.fcfs, seats});
+  UI.undo = []; UI.gen++; UI.sel = null; UI.tab = 'players'; UI.hold = false; UI.kcur = null; UI.practice = false;
+  UI.seasonSnap = snap(UI.S);
+  UI.viewer = humans()[0] ?? 0;
+  if (pnp()) UI.viewer = actor(UI.S);
+  save(); renderGame(); next();
+}
+
+// ---------- move previews on hover (and on the keyboard cursor) ----------
+function previewHTML(el) {
+  const S = UI.S; if (!S || !el) return '';
+  const p = myTurn() ? S.pending.p : viewer(), turn = myTurn() && S.pending.t === 'turn' && (!UI.sel || UI.sel.mode === 'choose');
+  const costLine = (m, label) => {
+    const c = Engine.cost(S, p, m), hand = S.players[p].hand.length - (m.card ? 1 : 0);
+    if (c > hand) return `<div class="bad">${label}: needs ${plural(c, 'card')}, you have ${hand}.</div>`;
+    const pay = Engine.suggestPay(S, p, m), full = pay && {...m, pay}, txt = full && !Engine.check(S, full) ? outcomeText(S, full, p) : '';
+    return `<div><b>${label}</b> (${plural(c, 'card')}${pay && pay.length ? `: ${pay.map(id => esc(T(id).name)).join(', ')}` : ''})${txt ? ` \u2192 ${txt}` : ''}</div>`;
+  };
+  const a = el.dataset.a;
+  if (a === 'room') {
+    const i = +el.dataset.i, R = S.rooms[i]; if (!R.guest) return '';
+    const t = T(R.guest);
+    let h = `<b>${esc(t.name)}</b> <span class="muted">room ${i + 1} \u00B7 rank ${t.rank} \u00B7 ${t.money}F${APTITUDE[t.color] ? ` \u00B7 ${ICON[APTITUDE[t.color]]}` : ''}</span>${t.annex ? `<div class="muted">${esc(t.annex)}: ${esc(SHORT[t.effect])}</div>` : ''}`;
+    if (turn) h += costLine({t: 'bribe', rooms: [i]}, `${ICON.bribe} Bribe`) + costLine({t: 'kill', rooms: [i]}, `${ICON.kill} Kill`);
+    return h;
+  }
+  if (a === 'hand') {
+    const id = el.dataset.id, t = T(id);
+    let h = `<b>${esc(t.name)}</b> <span class="muted">rank ${t.rank}${APTITUDE[t.color] ? ` \u00B7 aptitude ${ICON[APTITUDE[t.color]]}` : ''}</span>${t.annex ? `<div class="muted">${esc(t.annex)}: ${esc(t.text)}</div>` : ''}`;
+    if (turn && t.annex) h += costLine({t: 'build', card: id}, `${ICON.build} Build`);
+    return h;
+  }
+  if (a === 'corpse') {
+    const id = el.dataset.id, t = T(id);
+    let h = `<b>Corpse: ${esc(t.name)}</b> <span class="muted">rank ${t.rank} \u00B7 ${t.money}F in his pockets</span>`;
+    if (turn) { const d = defaultDest([]); if (d) h += costLine({t: 'bury', items: [{id, owner: d.p, annex: d.i}]}, `${ICON.bury} Bury under ${annexName(d.p, d.i)}`); else h += '<div class="bad">No free annex anywhere.</div>'; }
+    return h;
+  }
+  return '';
+}
+const tipEl = () => $('#tip') || document.body.appendChild(Object.assign(document.createElement('div'), {id: 'tip', className: 'tip'}));
+let tipFor = null;
+function tipShow(el, x, y) {
+  if (el !== tipFor) { tipFor = el; const h = previewHTML(el); if (!h) return tipHide(); tipEl().innerHTML = h; }
+  const t = tipEl(); t.hidden = false;
+  const w = t.offsetWidth, hgt = t.offsetHeight;
+  t.style.left = Math.max(6, Math.min(innerWidth - w - 6, x + 14)) + 'px';
+  t.style.top = (y + 16 + hgt > innerHeight ? Math.max(6, y - hgt - 12) : y + 16) + 'px';
+}
+function tipHide() { tipFor = null; const t = $('#tip'); if (t) t.hidden = true; }
+document.addEventListener('pointermove', e => {
+  if (e.pointerType !== 'mouse' || !UI.S || UI.modal || !$('#game')) return;
+  const el = e.target.closest('.room[data-a], .hc[data-a]');
+  if (!el) return tipFor && tipHide();
+  tipShow(el, e.clientX, e.clientY);
+});
+document.addEventListener('pointerdown', tipHide);
+
+// ---------- keyboard ----------
+const KEYS = [['\u2190 \u2192 \u2191 \u2193', 'Move the cursor over what you can choose'], ['Enter', 'Choose what the cursor is on, or confirm'], ['1 \u2013 9', 'Press a button in the action panel or a popup'],
+  ['Space', 'Pass (then Space again to confirm)'], ['Esc', 'Cancel the current choice, or close a popup'], ['Z', 'Undo'], ['J', 'Journal'], ['I', 'Rival intel'], ['?', 'This list']];
+function showKeys() {
+  modal({title: 'Keyboard shortcuts', body: `<table class="res keys">${KEYS.map(([k, v]) => `<tr><td><kbd>${k}</kbd></td><td>${v}</td></tr>`).join('')}</table><p class="muted">Hovering a traveler or a card with the mouse (or the cursor) previews what each action would cost and earn.</p>`});
+}
+function cursorTargets() { return $$('.play .tgt[data-a], .boardwrap .tgt[data-a]'); }
+function markCursor() {
+  if (!UI.kcur) return;
+  const el = cursorTargets().find(x => x.dataset.a === UI.kcur.a && (x.dataset.i || x.dataset.id || '') === UI.kcur.v);
+  if (!el) return;
+  el.classList.add('kcur');
+  const r = el.getBoundingClientRect(); tipFor = null; tipShow(el, r.right - 10, r.top + r.height / 2);
+}
+document.addEventListener('keydown', e => {
+  if (e.ctrlKey || e.metaKey || e.altKey || e.target.closest('input, select, textarea')) return;
+  const k = e.key, S = UI.S;
+  if (UI.modal) {
+    if (/^[1-9]$/.test(k)) { const b = $$('.mf button', UI.modal.el)[k - 1]; if (b) { e.preventDefault(); b.click(); } }
+    else if (k === 'Enter' && !e.target.closest('button, summary')) { const b = $('.mf button.primary', UI.modal.el); if (b) { e.preventDefault(); b.click(); } }
+    return;
+  }
+  const cc = $('.chcard'); if (cc && (k === 'Enter' || k === ' ' || k === 'Escape')) { e.preventDefault(); return cc.click(); }
+  const pass = $('#passok'); if (pass && (k === 'Enter' || k === ' ')) { e.preventDefault(); return pass.click(); }
+  if (UI.tour && (k === 'ArrowRight' || k === 'ArrowLeft') && !UI.tour.waiting) { e.preventDefault(); return tourGo(UI.tour.i + (k === 'ArrowRight' ? 1 : -1)); }
+  if (!S || !$('#game')) return;
+  if (k === '?') { e.preventDefault(); return showKeys(); }
+  if (k === 'Escape') { if (UI.sel && myTurn() && S.pending.t === 'turn') { UI.sel = null; renderGame(); } return; }
+  if (k === 'z' || k === 'Z') return undo();
+  if (k === 'j' || k === 'J') { UI.tab = 'journal'; UI.sheetMin = false; return renderGame(); }
+  if ((k === 'i' || k === 'I') && !solo()) { UI.tab = 'intel'; UI.sheetMin = false; return renderGame(); }
+  if (/^[1-9]$/.test(k)) { const b = $$('.prompt .pbtns button, .prompt .dests button')[k - 1]; if (b) { e.preventDefault(); b.click(); } return; }
+  if (k === ' ' && !e.target.closest('button')) {
+    e.preventDefault();
+    if (!myTurn() || S.pending.t !== 'turn') return;
+    if (UI.sel && UI.sel.mode === 'pass') return onOpt('confirm');
+    return onOpt('pass');
+  }
+  if (k.startsWith('Arrow')) {
+    const T0 = cursorTargets(); if (!T0.length) return;
+    e.preventDefault();
+    const at = UI.kcur ? T0.findIndex(x => x.dataset.a === UI.kcur.a && (x.dataset.i || x.dataset.id || '') === UI.kcur.v) : -1, step = k === 'ArrowRight' || k === 'ArrowDown' ? 1 : -1;
+    const el = T0[at < 0 ? (step > 0 ? 0 : T0.length - 1) : (at + step + T0.length) % T0.length];
+    UI.kcur = {a: el.dataset.a, v: el.dataset.i || el.dataset.id || ''};
+    return renderGame();
+  }
+  if (k === 'Enter') {
+    if (UI.kcur) {
+      const el = cursorTargets().find(x => x.dataset.a === UI.kcur.a && (x.dataset.i || x.dataset.id || '') === UI.kcur.v);
+      if (el) { e.preventDefault(); tipHide(); UI.kcur = null; return el.dispatchEvent(new MouseEvent('click', {bubbles: true})); }
+    }
+    const b = $('.prompt .pbtns button.primary:not([disabled])'); if (b) { e.preventDefault(); b.click(); }
+  }
+});
+
+// ---------- share a scorecard image ----------
+function scorecard() {
+  const S = UI.S, R = S.result, cv = document.createElement('canvas'), W = 1000, H = 160 + R.rows.length * 86 + 70;
+  cv.width = W; cv.height = H;
+  const g = cv.getContext('2d');
+  g.fillStyle = '#16100d'; g.fillRect(0, 0, W, H);
+  g.fillStyle = '#8f1d1a'; g.beginPath(); g.arc(W - 120, 40, 160, 0, Math.PI * 2); g.fill();
+  g.strokeStyle = '#c9a25a'; g.lineWidth = 5; g.strokeRect(14, 14, W - 28, H - 28);
+  g.fillStyle = '#efe3c4'; g.font = 'bold 44px Georgia, serif'; g.fillText('The Bloody Inn', 44, 78);
+  g.font = '20px Georgia, serif'; g.textAlign = 'right'; g.fillText(new Date().toLocaleDateString(), W - 44, 74); g.textAlign = 'left';
+  const rows = R.rows.slice().sort((a, b) => a.rank - b.rank), max = Math.max(1, ...rows.map(r => r.total));
+  g.font = 'italic 24px Georgia, serif'; g.fillStyle = '#e0b850';
+  g.fillText(S.n === 1 ? (S.lost ? 'Arrested by the police' : `Solo: ${rows[0].total}F, ${R.rating}`) : `${rows.filter(r => r.rank === 1).map(r => you(r.p) ? 'You' : r.name).join(' & ')} ${rows.filter(r => r.rank === 1).length > 1 ? 'share the victory' : you(rows[0].p) ? 'win' : 'wins'}`, 44, 122);
+  rows.forEach((r, k) => {
+    const y = 170 + k * 86;
+    g.fillStyle = SEAT_HEX[r.color]; g.beginPath(); g.arc(60, y + 14, 14, 0, Math.PI * 2); g.fill();
+    g.fillStyle = '#efe3c4'; g.font = 'bold 24px Georgia, serif'; g.fillText(`${r.rank}. ${you(r.p) ? 'You' : r.name}`, 88, y + 22);
+    g.fillStyle = 'rgba(239,227,196,.15)'; g.fillRect(300, y, 560, 28);
+    g.fillStyle = SEAT_HEX[r.color]; g.fillRect(300, y, 560 * r.total / max, 28);
+    g.fillStyle = '#efe3c4'; g.font = 'bold 24px sans-serif'; g.fillText(`${r.total}F`, 874, y + 22);
+    g.font = '16px sans-serif'; g.fillStyle = '#b9a98a'; g.fillText(`${r.cash}F cash \u00B7 ${r.checks} checks \u00B7 ${r.buried} buried \u00B7 ${r.annexes} annexes`, 300, y + 52);
+  });
+  g.font = '17px sans-serif'; g.fillStyle = '#8c7c62';
+  g.fillText(`${S.n} player${S.n === 1 ? '' : 's'} \u00B7 ${S.opts.long ? 'long' : 'short'} game \u00B7 ${S.round} rounds \u00B7 v${APP_VERSION} \u00B7 benderrodrigo.github.io/bloody-inn`, 44, H - 36);
+  return cv;
+}
+function showShare() {
+  const cv = scorecard(), url = cv.toDataURL('image/png');
+  const canShare = !!(navigator.canShare && navigator.share);
+  modal({title: 'Share result', dock: false, body: `<img class="scorecard" src="${url}" alt="Scorecard image of this game">`, buttons: [
+    ...(canShare ? [{label: '\u{1F4E4} Share', cls: 'primary', keep: true, fn: () => cv.toBlob(b => {
+      const f = new File([b], 'bloody-inn-result.png', {type: 'image/png'});
+      (navigator.canShare({files: [f]}) ? navigator.share({files: [f], title: 'The Bloody Inn result'}) : navigator.share({title: 'The Bloody Inn result'})).catch(() => {});
+    })}] : []),
+    {label: '\u2B07\uFE0F Save image', cls: canShare ? '' : 'primary', keep: true, fn: () => { const a = document.createElement('a'); a.href = url; a.download = 'bloody-inn-result.png'; a.click(); }},
+    {label: 'Back to results', fn: showResult}]});
+}
+
+// ---------- guided tour on a practice game ----------
+const TOUR = [
+  {sel: '.top', t: 'Welcome to the inn', b: 'The top bar shows whose decision it is, the round and how many travelers are left, a police warning when a policeman is in the inn, and everyone\u2019s money: cash (max 40F) plus checks.'},
+  {sel: '.inn .rooms', t: 'The rooms', b: 'Each round the first player lodges a traveler in every open room. The key shows who owns the room: you earn 1F per occupied room of your colour when the guests leave. Tap a traveler to see what bribing or killing him costs.'},
+  {sel: '.boardwrap', t: 'Wealth Track and bistro', b: 'The discs on the board show everyone\u2019s cash. Peasants drink at the bistro: bribe one or two for free, or kill one. Tap \u2922 to enlarge the board.'},
+  {sel: '.tableau', t: 'Your hand, annexes and corpses', b: 'Accomplices in your hand pay for actions: a card whose aptitude matches the action comes back. Annexes hold as many corpses as their rank; your barn holds one. Unburied corpses cost 10F each when the police investigate.'},
+  {sel: '.side .prompt', sheet: true, t: 'Try it: take an action', b: 'Pick something lit up: a traveler to bribe or kill, a card in your hand to build, or Pass. The panel suggests a payment and previews the money; tap Confirm.', wait: T => UI.S.log.slice(T.log0).some(l => l.p === 0 && ['bribe', 'kill', 'build', 'bury', 'pass'].includes(l.kind))},
+  {sel: '.side .panelrest', sheet: true, t: 'Players, Journal and Rival intel', b: 'Players lists everyone\u2019s hand, annexes and corpses (tap a name for details). The Journal tells every move; Rival intel hints at what your rivals are up to.'},
+  {sel: '.menubtn', t: 'Menu and shortcuts', b: 'Sound, animations, card art and opponent speed are in the menu. On a keyboard, press ? for shortcuts. That is the tour: play on, or start a real game from the menu.'}];
+function tourStart() {
+  closeModal();
+  const back = UI.S && !UI.S.over && !UI.practice ? {S: UI.S, undo: UI.undo, viewer: UI.viewer, tab: UI.tab, seasonSnap: UI.seasonSnap, sheetMin: UI.sheetMin} : null;
+  clearTimeout(UI.timer); UI.gen++;
+  UI.practice = true;
+  const seats = [{name: 'You', type: 'human', level: 'normal'}, {name: 'Anna', type: 'ai', level: 'easy'}];
+  const S = Engine.newGame({seed: 4242, long: false, seats});
+  let g = 0;
+  while (S.pending && (S.pending.t !== 'turn' || S.pending.p !== 0) && g++ < 40) Engine.apply(S, AI.decide(S, 'easy'));
+  UI.S = S;
+  UI.undo = []; UI.viewer = 0; UI.tab = 'players'; UI.hold = false; UI.kcur = null; UI.sel = null; UI.seasonSnap = snap(UI.S);
+  UI.tour = {i: 0, back, log0: 0};
+  document.body.insertAdjacentHTML('beforeend', `<div id="tour"><div class="spot"></div><div class="tcard" role="dialog" aria-live="polite"></div></div>`);
+  $('#tour .tcard').addEventListener('click', e => {
+    const b = e.target.closest('[data-tour]'); if (!b) return;
+    const k = b.dataset.tour;
+    if (k === 'skip') return tourEnd(true);
+    tourGo(UI.tour.i + (k === 'next' ? 1 : -1));
+  });
+  addEventListener('resize', tourPlace);
+  renderGame(); next(); tourGo(0);
+}
+function tourGo(i) {
+  const T0 = UI.tour; if (!T0) return;
+  if (i >= TOUR.length) return tourEnd(true);
+  T0.i = Math.max(0, i);
+  const st = TOUR[T0.i];
+  if (st.wait) T0.log0 = UI.S.log.length;
+  if (st.sheet) { UI.sheetMin = false; UI.tab = 'players'; }
+  renderGame();
+}
+function tourPlace() {
+  const T0 = UI.tour, box = $('#tour'); if (!T0 || !box) return;
+  const st = TOUR[T0.i], el = $(st.sel), spot = $('.spot', box), card = $('.tcard', box);
+  T0.waiting = !!(st.wait && !st.wait(T0));
+  card.innerHTML = `<div class="tstep">Step ${T0.i + 1} of ${TOUR.length}</div><h3>${st.t}</h3><p>${st.b}</p>${st.wait ? `<p class="${T0.waiting ? 'twait' : 'tdone'}">${T0.waiting ? '\u23F3 Waiting for your move\u2026' : '\u2714 Nicely done.'}</p>` : ''}
+    <div class="tbtns"><button data-tour="skip" class="ghost">${T0.i === TOUR.length - 1 ? 'Close' : 'Skip tour'}</button><span class="spacer"></span><button data-tour="back" ${T0.i ? '' : 'disabled'}>Back</button><button data-tour="next" class="primary" ${T0.waiting ? 'disabled' : ''}>${T0.i === TOUR.length - 1 ? 'Finish' : 'Next'}</button></div>`;
+  if (!el) { spot.hidden = true; card.style.left = '50%'; card.style.top = '30%'; card.style.transform = 'translateX(-50%)'; return; }
+  const r = el.getBoundingClientRect(), pad = 6;
+  Object.assign(spot.style, {left: r.left - pad + 'px', top: r.top - pad + 'px', width: r.width + pad * 2 + 'px', height: r.height + pad * 2 + 'px'}); spot.hidden = false;
+  const cw = Math.min(340, innerWidth - 20), ch = card.offsetHeight || 200;
+  card.style.width = cw + 'px'; card.style.transform = '';
+  let x = r.left + r.width / 2 - cw / 2, y = r.bottom + 14;
+  if (y + ch > innerHeight - 8) y = r.top - ch - 14;
+  if (y < 8) { y = Math.max(8, Math.min(innerHeight - ch - 8, r.top + 20)); x = r.right + 14 + cw < innerWidth ? r.right + 14 : r.left - cw - 14; }
+  card.style.left = Math.max(10, Math.min(innerWidth - cw - 10, x)) + 'px'; card.style.top = Math.max(8, y) + 'px';
+}
+function tourEnd(restore) {
+  const T0 = UI.tour; if (!T0) return;
+  UI.tour = null; store.set('tourDone', true);
+  removeEventListener('resize', tourPlace);
+  const box = $('#tour'); if (box) box.remove();
+  if (!restore) { UI.practice = false; return; }
+  if (T0.back) {
+    clearTimeout(UI.timer); UI.gen++; closeModal(); UI.practice = false;
+    Object.assign(UI, {S: T0.back.S, undo: T0.back.undo, viewer: T0.back.viewer, tab: T0.back.tab, seasonSnap: T0.back.seasonSnap, sheetMin: T0.back.sheetMin, hold: false, sel: null});
+    renderGame(); next(); toast('Back to your game');
+  } else { renderGame(); toast('Practice game: play on, it is not saved or counted.\nStart a real game from the menu.', 3200); }
+}
+
+// ---------- ?test, ?selfplay, ?freeze ----------
+function runTests() {
+  const res = Tests.run(), pass = res.filter(x => x.ok).length;
+  document.title = `TESTS ${pass}/${res.length}`;
+  $('#app').innerHTML = `<div class="testlist"><h2>TESTS ${pass}/${res.length}</h2><p>${pass} passed, ${res.length - pass} failed</p>${res.map(x => `<div class="${x.ok ? 'p' : 'f'}">${x.ok ? '\u2713' : '\u2717'} ${esc(x.name)}${x.ok ? '' : '\n   ' + esc(x.msg)}</div>`).join('')}</div>`;
+}
+function selfplaySeats() {
+  const sv = Q.get('seats') || '4', levels = (Q.get('levels') || 'normal').split(',');
+  const n = sv === 'solo' ? 1 : +sv;
+  return Array.from({length: n}, (_, i) => ({name: i ? AI_NAMES[i - 1] : 'You', type: i && Q.get('pnp') !== '1' ? 'ai' : 'human', level: levels[i % levels.length]}));
+}
+function runSelfplay() {
+  const games = +(Q.get('n') || 1), seed0 = +(Q.get('seed') || 1000), long = Q.get('short') !== '1';
+  let steps = 0, last = '';
+  UI.auto = true;
+  try {
+    for (let g = 0; g < games; g++) {
+      UI.S = Engine.newGame({seed: seed0 + g, long, seats: selfplaySeats(), unlimited: Q.get('unlimited') === '1', fcfs: Q.get('fcfs') === '1'}); UI.undo = []; UI.viewer = 0;
+      let k = 0;
+      while (!UI.S.over) {
+        if (++k > 6000) throw new Error('stalled at seed ' + (seed0 + g));
+        const p = actor(UI.S);
+        if (pnp()) UI.viewer = p;
+        const m = AI.decide(UI.S, seat(p).level);
+        const err = Engine.check(UI.S, m);
+        if (err) throw new Error(`illegal move ${JSON.stringify(m)}: ${err}`);
+        commit(m, isHuman(p));
+        if (k % 23 === 0) renderGame();
+      }
+      steps += k;
+      last = UI.S.result.rows.map(r => r.total).join('/');
+    }
+    UI.auto = false; renderGame();
+    document.title = `SELFPLAY DONE ${last} in ${steps} steps`;
+  } catch (e) {
+    UI.auto = false;
+    document.title = `SELFPLAY ERROR ${e.message}`;
+    $('#app').insertAdjacentHTML('afterbegin', `<pre class="testlist f">${esc(e.stack || e)}</pre>`);
+  }
+}
+function runFreeze() {
+  const o = {...defaultSetup(), n: Q.get('seats') === 'solo' ? 1 : +(Q.get('seats') || 4), opp: Q.get('opp') || 'normal', long: Q.get('short') !== '1'};
+  startGame(o, +(Q.get('seed') || 7));
+  clearTimeout(UI.timer);
+  const turns = +(Q.get('turns') || 0);
+  UI.auto = true;
+  for (let k = 0; k < turns && !UI.S.over; k++) commit(AI.decide(UI.S, 'normal'), false);
+  let g = 0;
+  const want = Q.get('until') || 'turn';
+  while (!UI.S.over && g++ < 3000 && (!isHuman(actor(UI.S)) || (want !== 'any' && UI.S.pending.t !== want) || (Q.has('end') && !UI.S.over))) commit(AI.decide(UI.S, 'normal'), false);
+  UI.auto = false; UI.undo = [];
+  if (Q.get('tab')) UI.tab = Q.get('tab');
+  if (Q.has('sheet')) UI.sheetMin = Q.get('sheet') === 'min';
+  renderGame();
+  const pop = Q.get('popup');
+  const S = UI.S, myP = S.pending && S.pending.p;
+  if (pop === 'help') showHelp();
+  if (pop === 'menu') showMenu();
+  if (pop === 'keys') showKeys();
+  if (pop === 'stats') { if (S.over) recordStats(S); showStats(); }
+  if (pop === 'result' && S.over) showResult();
+  if (pop === 'share' && S.over) showShare();
+  if (pop === 'exit') showExit();
+  if (pop === 'board') showBoard();
+  if (pop === 'player') showPlayer(1);
+  if (pop === 'card') { const i = S.rooms.findIndex(R => R.guest); if (i >= 0) showCard(S.rooms[i].guest); }
+  if (pop === 'season') { UI.seasonSnap = snap(S).map(x => ({...x, total: x.total - 12, annexes: Math.max(0, x.annexes - 1)})); showSeason(S); }
+  if (pop === 'tour') { UI.freeze = false; tourStart(); UI.freeze = true; clearTimeout(UI.timer); tourGo(+(Q.get('tstep') || 1) - 1); }
+  if (pop === 'choose' && myTurn()) { const o2 = Engine.options(S, myP), i = o2.kill.find(x => o2.bribe.includes(x)) ?? o2.bribe[0]; if (i !== undefined) onRoom(i); }
+  if (pop === 'pay' && myTurn()) { const o2 = Engine.options(S, myP), i = o2.bribe.find(x => Engine.cost(S, myP, {t: 'bribe', rooms: [x]}) > 0) ?? o2.bribe[0]; if (i !== undefined) { onRoom(i); onOpt('bribe'); } }
+  if (pop === 'build' && myTurn()) { const id = Engine.options(S, myP).build[0]; if (id) onHand(id); }
+  if (pop === 'pass' && myTurn()) onOpt('pass');
+  if (pop === 'cursor') { const el = cursorTargets()[+(Q.get('k') || 0)]; if (el) { UI.kcur = {a: el.dataset.a, v: el.dataset.i || el.dataset.id || ''}; renderGame(); } }
+  if (pop === 'preview') { const el = $('.room.tgt'); if (el) { const r = el.getBoundingClientRect(); tipShow(el, r.left + r.width / 2, r.top + r.height / 2); el.classList.add('kcur'); } }
+  document.title = `FROZEN round ${S.round} ${S.pending ? S.pending.t : 'over'}`;
+}
+
+// ?uitest: play whole games through DOM clicks only; each human move must equal the engine applying the same move.
+async function runUiTest() {
+  const wait = ms => new Promise(r => setTimeout(r, ms));
+  let clicks = 0, moves = 0, last = '';
+  const click = (el, what) => { if (!el) throw new Error('missing ' + what); el.dispatchEvent(new MouseEvent('click', {bubbles: true})); clicks++; };
+  const room = i => $(`.room[data-i="${i}"]`), hand = id => $(`.tableau [data-a="hand"][data-id="${id}"]`), opt = o => $(`.prompt [data-o="${o}"]`);
+  const fixPay = want => {
+    for (const id of UI.sel.pay.filter(x => !want.includes(x))) click(hand(id), 'pay card ' + id);
+    for (const id of want.filter(x => !UI.sel.pay.includes(x))) click(hand(id), 'pay card ' + id);
+  };
+  async function play(m) {
+    switch (m.t) {
+      case 'lodge': case 'rs': case 'monk': return click(room(m.room), 'room ' + m.room);
+      case 'grave': return click(opt('grave:' + m.checks), 'grave option');
+      case 'release':
+        for (const id of UI.sel.ids.filter(x => !m.ids.includes(x))) click(hand(id), 'release card');
+        for (const id of m.ids.filter(x => !UI.sel.ids.includes(x))) click(hand(id), 'release card');
+        return click(opt('release'), 'release button');
+      case 'pass':
+        click(opt('pass'), 'pass');
+        for (let k = 0; k < Math.abs(m.launder || 0); k++) click(opt(m.launder > 0 ? 'k+' : 'k-'), 'launder');
+        return click(opt('confirm'), 'confirm pass');
+      case 'peasants': click($('.stack.bist'), 'bistro'); return click(opt('peas:' + m.n), 'peasants');
+      case 'killPeasant': click($('.stack.bist'), 'bistro'); return click(opt('killpeas'), 'kill peasant');
+      case 'bribe': case 'kill':
+        click(room(m.rooms[0]), 'room'); click(opt(m.t), m.t);
+        for (const r of m.rooms.slice(1)) click(room(r), 'extra room');
+        fixPay(m.pay); return click(opt('confirm'), 'confirm');
+      case 'build': click(hand(m.card), 'build card'); fixPay(m.pay); return click(opt('confirm'), 'confirm');
+      case 'bury':
+        m.items.forEach((it, k) => {
+          click($(`.tableau [data-a="corpse"][data-id="${it.id}"]`), 'corpse');
+          if (k === 0 || UI.sel.items.length === k + 1) click($(`.prompt [data-a="dest"][data-p="${it.owner}"][data-i="${it.annex}"]`), 'annex ' + it.owner + '/' + it.annex);
+        });
+        fixPay(m.pay); return click(opt('confirm'), 'confirm');
+    }
+    throw new Error('no UI path for ' + m.t);
+  }
+  UI.aiSpeed = 'fast'; UI.anim = false;
+  try {
+    for (let g = 0; g < +(Q.get('n') || 1); g++) {
+      const n = Q.get('seats') === 'solo' ? 1 : +(Q.get('seats') || 3);
+      startGame({...defaultSetup(), n, opp: Q.get('pnp') === '1' ? 'pnp' : 'normal', long: Q.get('short') !== '1'}, +(Q.get('seed') || 2000) + g);
+      let guard = 0;
+      while (!UI.S.over) {
+        if (++guard > 20000) throw new Error('stalled');
+        await wait(5);
+        const cc = $('.chcard'); if (cc) { click(cc, 'season card'); continue; }
+        const ps = $('#passok'); if (ps) { click(ps, 'pass device'); continue; }
+        if (!myTurn()) continue;
+        const before = UI.S, m = AI.decide(before, 'normal'), want = structuredClone(before);
+        Engine.apply(want, m);
+        await play(m);
+        if (UI.S.done) want.done = true;
+        if (UI.S === before) throw new Error('UI did not commit ' + JSON.stringify(m) + ' sel ' + JSON.stringify(UI.sel));
+        if (JSON.stringify(UI.S) !== JSON.stringify(want)) {
+          const diff = (a, b, path) => {
+            if (JSON.stringify(a) === JSON.stringify(b)) return null;
+            if (a && b && typeof a === 'object' && typeof b === 'object') for (const k of new Set([...Object.keys(a), ...Object.keys(b)])) { const d = diff(a[k], b[k], path + '.' + k); if (d) return d; }
+            return `${path}: ui ${JSON.stringify(a)} vs engine ${JSON.stringify(b)}`.slice(0, 300);
+          };
+          throw new Error('UI state differs after ' + JSON.stringify(m) + ' at ' + diff(UI.S, want, 'S'));
+        }
+        moves++;
+      }
+      await wait(1200); closeModal();
+      last = UI.S.result.rows.map(r => r.total).join('/');
+    }
+    document.title = `UITEST DONE ${moves} moves ${clicks} clicks, last ${last}`;
+  } catch (e) {
+    document.title = `UITEST ERROR ${e.message}`.slice(0, 400);
+    $('#app').insertAdjacentHTML('afterbegin', `<pre class="testlist f">${esc(e.stack || e)}</pre>`);
+  }
+}
+
+function boot() {
+  if (Q.has('uitest')) return runUiTest();
+  if (Q.has('test')) return runTests();
+  if (Q.has('selfplay')) return runSelfplay();
+  if (UI.freeze) return runFreeze();
+  landing();
+}
+boot();
+
+</script>
+</body>
+</html>

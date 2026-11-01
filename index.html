@@ -117,6 +117,15 @@ details.seats summary { cursor: pointer; color: var(--muted); font-size: 13px; }
 .stk2 { display: flex; flex-direction: column; gap: 6px; }
 .exitbars { display: flex; gap: 2px; align-items: flex-end; height: 40px; width: 100%; padding: 0 4px; } .exitbars i { flex: 1; background: var(--c); height: var(--h); min-height: 2px; border-radius: 2px 2px 0 0; }
 .bigboard svg { width: 100%; height: auto; }
+/* the carnival row: event card and trailers beside the inn */
+.rooms.carnival { margin-top: 8px; padding-top: 8px; border-top: 1px dashed #6a4a2a; }
+.room.trailer { background: #2a1a0f; border-color: #8a5a2a; border-style: dashed; }
+.evslot { padding: 4px; display: flex; flex-direction: column; gap: 2px; align-items: stretch; border: 2px solid #2c4f6b; border-radius: 10px; background: #14202a; }
+.evslot .card { width: 100%; height: auto; display: block; } .evslot .lab { font-size: 11px; color: var(--muted); text-align: center; }
+.evslot .empty { aspect-ratio: 100 / 140; text-align: center; }
+.evslot.live { border-color: #5fb0e8; box-shadow: 0 0 12px rgba(95, 176, 232, .5); } .evslot.live .lab { color: #9fd2f5; }
+.tok { display: inline-flex; align-items: center; justify-content: center; width: 20px; height: 18px; border-radius: 4px; background: var(--c); border: 1px solid #000; font-size: 11px; }
+.tpill.evp { border-color: #2c4f6b; } .tpill.evp.live { border-color: #5fb0e8; background: #12283a; }
 @media (max-width: 520px) { .mid { grid-template-columns: 52px 1fr 52px; gap: 4px; } .rooms { gap: 4px; } .room { padding: 2px; border-radius: 7px; } .room .door { font-size: 10px; } .keychip, .rschip { width: 18px; height: 15px; font-size: 9px; } }
 
 /* ---------- tableau ---------- */
@@ -130,6 +139,17 @@ details.seats summary { cursor: pointer; color: var(--muted); font-size: 13px; }
 .paybadge.hand { background: #2c6b34; } .paybadge.bistro { background: #8a6a12; }
 .annex .cap { font-size: 11px; text-align: center; margin-top: 2px; display: flex; gap: 3px; justify-content: center; flex-wrap: wrap; }
 .tuck { background: #3b0d0b; border: 1px solid #7a2a22; border-radius: 3px; padding: 0 3px; font-size: 10px; }
+.tuck.side { border-style: dashed; font-style: italic; }
+.annex.ininn .card { opacity: .75; } .annex.ininn .cap small { color: var(--muted); }
+.hc.snowed .card { filter: saturate(.3) brightness(1.25); }
+.objpick { flex: 1 1 100%; display: flex; gap: 6px; overflow-x: auto; padding-bottom: 4px; }
+.objpick button { flex: 1 0 92px; max-width: 140px; display: flex; flex-direction: column; gap: 4px; padding: 4px; text-align: center; }
+.objpick .card { width: 100%; height: auto; } .objpick small { font-size: 11px; line-height: 1.25; color: var(--muted); } .objpick small b { color: var(--ink); }
+.togs { flex: 1 1 100%; display: flex; flex-wrap: wrap; gap: 6px; }
+.objtog { font-size: 13px; border-style: dashed; } .objtog small { color: var(--muted); } .objtog.on { background: #2c4a26; border-color: #7fcf6a; border-style: solid; }
+.pwarn.ev { background: #12283a; border-color: #2c4f6b; }
+.je.k-event { color: #9fd2f5; } .je.k-object { color: #e8c98a; }
+details.mods summary, details.exp summary { cursor: pointer; } details.mods small { color: var(--muted); font-weight: 400; }
 .annex.sm { width: 70px; }
 .none { color: var(--muted); font-size: 13px; padding: 8px 0; }
 @media (max-width: 520px) { .hc, .annex { width: 64px; } }
@@ -271,18 +291,86 @@ peasant|Peasant|yellow|0|4|8|||
 const TYPES = {};
 for (const line of TYPES_TXT.trim().split('\n')) {
   const [id, name, color, rank, money, count, annex, effect, text] = line.split('|');
-  TYPES[id] = {id, name, color, rank: +rank, money: +money, count: +count, annex: annex || null, effect: effect || null, text: text || ''};
+  TYPES[id] = {id, name, color, rank: +rank, brank: +rank, money: +money, count: +count, annex: annex || null, effect: effect || null, text: text || '', apt: null, module: 'base'};
 }
+// The Carnies expansion. rank = top rank (in a room: bribe, kill, Room Service, Coffee, Cake); brank = bottom rank (bury, build, annex capacity).
+// id | name | colour | rank | brank | money | copies | annex | effect | aptitude | module | annex text
+const EXP_TXT = `
+actress|Actress|orange|1|0|10|1|||bribe|carnies|
+strongman|Strongman|orange|1|0|10|1|||build|carnies|
+fortuneteller|Fortune Teller|orange|1|0|10|1|||bury|carnies|
+knifethrower|Knife Thrower|orange|1|0|10|1|||kill|carnies|
+conartist|Con Artist|orange|0|2|14|1|Trailer|trailer||carnies|When welcoming travelers, if there are no corpses buried under this trailer, you must place a traveler on it.
+illusionist|Illusionist|orange|0|2|14|1|Trailer|trailer||carnies|When welcoming travelers, if there are no corpses buried under this trailer, you must place a traveler on it.
+juggler|Juggler|orange|0|2|14|1|Trailer|trailer||carnies|When welcoming travelers, if there are no corpses buried under this trailer, you must place a traveler on it.
+fireeater|Fire Eater|orange|0|2|14|1|Trailer|trailer||carnies|When welcoming travelers, if there are no corpses buried under this trailer, you must place a traveler on it.
+dwarf|Dwarf|orange|2|1|16|1||||carnies|When buried, place the dwarf sideways under an annex. It does not count toward the maximum number of corpses that can be buried under the annex.
+beartamer|Bear Tamer|orange|3|1|20|1|Bear Cage|bearcage||carnies|From now on, play 1 fewer accomplice to perform the Kill a Guest action.
+twins|Twins|orange|2|1|24|1||||carnies|When buried, the twins must be placed under an annex where at least 2 corpses can be buried. They count as 2 corpses.
+beardedlady|Bearded Lady|orange|2|1|24|1||||carnies|When buried, the bearded lady must be placed under another player's annex.
+barker|Barker|orange|1|3|20|1|Carnival Booth|booth||carnies|From now on, gain 3F each time you bribe a carnie.
+companion|Companion|orange|3|1|20|1|Nook|nook||carnies|From now on, you are not required to discard accomplices of the other types when you play them to perform the Bribe a Guest action.
+winemaker|Winemaker|green|2|0|14|4|Wine Cask|winecask||notables|Immediately gain 3F per neutral room occupied by a traveler.
+sericulturist|Sericulturist|green|0|1|10|4|Silk Farm|silkfarm||notables|Immediately gain 3F per room of your color occupied by a traveler (excluding trailers).
+surgeon|Surgeon|green|1|2|16|3|Laboratory|laboratory||notables|From now on, each time travelers leave, gain 3F if another player has an unburied corpse.
+notary|Notary|green|3|1|20|1|Study|study||notables|From now on, each time another player exchanges money for checks, you may immediately exchange 10F for a 10F check.
+pharmacist|Pharmacist|green|1|3|20|1|Pharmacy|pharmacy||notables|From now on, each time travelers leave, gain 2F if another player has at least 3 accomplices.
+banker|Banker|green|1|3|20|1|Safe|safe||notables|From now on, each time another player exceeds the 40F limit on the Wealth Track, gain the excess.
+`;
+for (const line of EXP_TXT.trim().split('\n')) {
+  const [id, name, color, rank, brank, money, count, annex, effect, apt, module, text] = line.split('|');
+  TYPES[id] = {id, name, color, rank: +rank, brank: +brank, money: +money, count: +count, annex: annex || null, effect: effect || null, text: text || '', apt: apt || null, module};
+}
+const SPECIAL_BURIAL = {dwarf: 'dwarf', twins: 'twins', beardedlady: 'lady'};
+
+// Event cards (module 1, optional): revealed the first time a carnie is lodged in a round, resolved if a carnie is still in the inn at the end of it.
+const EVENTS = {
+  highseason: {name: 'High Season', text: 'At the end of the round, when travelers leave, each player gains 4F per room of his color occupied by a traveler instead of 1F.'},
+  fiasco: {name: 'Fiasco', text: 'At the end of the round, before paying wages, each player discards all his accomplices.'},
+  cirrhosis: {name: 'Cirrhosis', text: 'At the end of the round, after paying wages, return one peasant from the bistro to the box.'},
+  blackmail: {name: 'Blackmail', text: 'At the end of the round, whether or not the police investigates, each player with at least 1 unburied corpse must call upon the village gravedigger.'},
+  redherring: {name: 'Red Herring', text: 'At the end of the round, skip the police investigation.'},
+  brokensafe: {name: 'Broken Safe', text: 'At the end of the round, after travelers leave, each player loses half the value of his checks (rounded up).'},
+  extortion: {name: 'Extortion', text: 'At the end of the round, when paying wages, each player must pay his accomplices twice.'},
+  pickpockets: {name: 'Pickpockets', text: 'At the end of the round, before paying wages, each player loses half his money (rounded up).'},
+};
+// Object cards (module 3, Aunt Ginette's Tips & Tricks). when: the action they modify, or the window in which they are played.
+const OBJECTS = {
+  goldteeth: {name: 'Gold Teeth', cost: 0, when: 'bury', text: 'Play this card when you perform a Bury a Corpse action. Gain money equal to twice the corpse\u2019s rank in addition to the money in the corpse\u2019s pockets.'},
+  wheelbarrow: {name: 'Wheelbarrow', cost: 3, when: 'build', text: 'Play this card when you perform a Build an Annex action. Build the annex of a traveler in a room of the inn, instead of the annex of a traveler from your hand.'},
+  hammer: {name: 'Hammer', cost: 1, when: 'build', text: 'Play this card when you perform a Build an Annex action. You are not required to discard accomplices to perform this action.'},
+  tomb: {name: 'Tomb', cost: 2, when: 'police', text: 'Play this card during a police investigation. If a player must call upon the village gravedigger, place that player\u2019s unburied corpse under the tomb. Immediately gain half the money in the corpse\u2019s pockets and return it to the box.'},
+  coffee: {name: 'Coffee', cost: 1, when: 'welcome', text: 'Play this card after welcoming travelers. Place the coffee on a traveler in a room of the inn. Immediately gain money equal to that traveler\u2019s rank. That traveler cannot be killed or bribed.'},
+  wolftrap: {name: 'Wolf Trap', cost: 2, when: 'kill', text: 'Play this card when you perform a Kill a Guest action. You are not required to discard accomplices to perform this action.'},
+  cake: {name: 'Cake', cost: 0, when: 'welcome', text: 'Play this card after welcoming travelers. Place the cake on an occupied room of the inn. If that room is still occupied before travelers leave, gain money equal to twice the traveler\u2019s rank.'},
+  bible: {name: 'Bible', cost: 2, when: 'bury', text: 'Play this card when you perform a Bury a Corpse action. You are not required to discard accomplices to perform this action.'},
+  confessional: {name: 'Confessional', cost: 2, when: 'end', text: 'Play this card at the end of a round. Immediately gain 6F from the player with the most buried corpses under his annexes (in case of a tie, gain 3F from each tied player).'},
+  rug: {name: 'Rug', cost: 0, when: 'welcome', text: 'Play this card after welcoming travelers. Give one of your unburied corpses to another player.'},
+  poison: {name: 'Poison', cost: 3, when: 'welcome', text: 'Play this card after welcoming travelers. Place the poison on a traveler in a room of the inn. Immediately kill that traveler. Give the unburied corpse to the owner of the room.'},
+  snowpile: {name: 'Snow Pile', cost: 1, when: 'police', text: 'Play this card before a police investigation. Place one of your unburied corpses under the snow pile. Discard the snow pile after travelers leave.'},
+  letter: {name: 'Letter of Denunciation', cost: 0, when: 'welcome', text: 'Play this card after welcoming travelers. At the start of Phase 3, each player with at least one unburied corpse must call upon the village gravedigger.'},
+  liquor: {name: 'Liquor', cost: 1, when: 'bribe', text: 'Play this card when you perform a Bribe a Guest action. You are not required to discard accomplices to perform this action.'},
+  well: {name: 'Well', cost: 3, when: 'kill', text: 'Play this card when you perform a Kill a Guest action. Immediately gain half the money in the corpse\u2019s pockets. Return the corpse to the box.'},
+  quicklime: {name: 'Quicklime', cost: 3, when: 'bury', text: 'Play this card when you bury a corpse under another player\u2019s annex. Gain all the money in the corpse\u2019s pockets.'},
+};
+const OBJECT_IDS = Object.keys(OBJECTS);
+const OBJ_START_CASH = 10;
+const MAX_KEYS = 8;
 // Card instances: newsboy1..newsboy4, peasant1..peasant8 (1-4 one illustration, 5-8 the other).
 const CARDS = {};
 for (const t of Object.values(TYPES)) for (let i = 1; i <= t.count; i++) CARDS[t.id + i] = {id: t.id + i, type: t.id};
 const T = id => TYPES[CARDS[id].type];
-const TRAVELER_IDS = Object.keys(CARDS).filter(id => CARDS[id].type !== 'peasant');
+const TRAVELER_IDS = Object.keys(CARDS).filter(id => CARDS[id].type !== 'peasant' && T(id).module === 'base');
 const PEASANT_IDS = Object.keys(CARDS).filter(id => CARDS[id].type === 'peasant');
+const NOBLE_IDS = TRAVELER_IDS.filter(id => T(id).color === 'green');
+const CARNIE_IDS = Object.keys(CARDS).filter(id => T(id).module === 'carnies');
+const NOTABLE_IDS = Object.keys(CARDS).filter(id => T(id).module === 'notables');
+// The traveler deck for a set of modules: Notables replace the nobles, Carnies are added.
+const deckFor = mods => [...TRAVELER_IDS.filter(id => !(mods.notables && T(id).color === 'green')), ...(mods.notables ? NOTABLE_IDS : []), ...(mods.carnies ? CARNIE_IDS : [])];
 const artFront = id => CARDS[id].type === 'peasant' ? (+id.slice(7) <= 4 ? 'peasantA' : 'peasantB') : CARDS[id].type;
 
-const COLORS = ['blue', 'red', 'purple', 'green', 'grey', 'yellow'];
-const COLOR_NAMES = {blue: 'merchant', red: 'artisan', purple: 'religious', green: 'noble', grey: 'police', yellow: 'peasant'};
+const COLORS = ['blue', 'red', 'purple', 'green', 'grey', 'orange', 'yellow'];
+const COLOR_NAMES = {blue: 'merchant', red: 'artisan', purple: 'religious', green: 'noble', grey: 'police', orange: 'carnie', yellow: 'peasant'};
 // Aptitude: cards of this colour return to hand when played for that action.
 const APTITUDE = {blue: 'bribe', red: 'build', grey: 'kill', purple: 'bury'};
 const ACTIONS = ['bribe', 'build', 'kill', 'bury', 'pass'];
@@ -308,8 +396,17 @@ const DOORS_TXT = `154,14 325,14 492,14 660,14 156,310 328,310 502,310 672,310`;
 BOARD.doors = DOORS_TXT.split(' ').map(s => { const [x, y] = s.split(',').map(Number); return {x, y}; });
 
 // ===== Rules engine: state in, legal actions and new state out. No DOM access. =====
-const APP_VERSION = '0.1';
+const APP_VERSION = '0.2';
 const CHANGELOG = [
+  {v: '0.2', date: '2026-11-01', items: [
+    'The Carnies expansion, every module selectable on the start screen.',
+    'Notables replace the nobles: Wine Cask, Silk Farm, Laboratory, Study, Pharmacy and Safe.',
+    'Carnies: trailers that open extra rooms, the Dwarf, the Twins and the Bearded Lady with their own burial rules, Bear Cage, Carnival Booth and Nook.',
+    'Events: revealed when the first carnie of a round arrives, resolved if a carnie is still in the inn.',
+    'Aunt Ginette\u2019s Tips & Tricks: draft 3 secret objects at the start and play each once.',
+    'Optional 50F checks on the wealth display.',
+    'Cards with two ranks show the rank in a room on the pillow and the rank outside on the house.',
+  ]},
   {v: '0.1', date: '2026-11-01', items: [
     'Full base game of The Bloody Inn: 70 travelers, 8 peasants, two seasons, short and long games.',
     'Seats for 1 to 4 players: you against AI innkeepers (Easy, Normal, Hard), pass and play, or the solo game with its innkeeper ratings.',
@@ -338,23 +435,38 @@ const Engine = (() => {
     if (S.sim) return;
     S.log.push({round: S.round, p, text, kind, ...extra});
   }
-  const rank = id => T(id).rank;
+  const isFiller = id => id[0] === '~';                  // the face-down card that fills the Twins' second slot
+  const rank = id => T(id).rank;                         // top rank: in a room
+  const brank = id => T(id).brank;                       // bottom rank: outside the rooms
   const color = id => T(id).color;
+  const apt = id => T(id).apt || APTITUDE[color(id)] || null;
   const isPolice = id => color(id) === 'grey';
   const isPeasant = id => CARDS[id].type === 'peasant';
+  const isCarnie = id => color(id) === 'orange';
+  const special = id => isFiller(id) ? null : SPECIAL_BURIAL[CARDS[id].type] || null;
+  const weight = id => isFiller(id) ? 0 : special(id) === 'twins' ? 2 : special(id) === 'dwarf' ? 0 : 1;
   const canAnnex = id => !!T(id).annex;
   const count = (P, eff) => P.annexes.reduce((n, a) => n + (a.id !== 'barn' && T(a.id).effect === eff ? 1 : 0), 0);
   const colorAnnexes = (P, col) => P.annexes.filter(a => a.id !== 'barn' && color(a.id) === col).length;
-  const annexRank = a => a.id === 'barn' ? BARN_RANK : rank(a.id);
-  const annexFree = a => annexRank(a) - a.under.length;
+  const annexRank = a => a.id === 'barn' ? BARN_RANK : brank(a.id);
+  const annexFree = a => annexRank(a) - a.under.reduce((n, id) => n + (isFiller(id) ? 1 : special(id) === 'dwarf' ? 0 : special(id) === 'twins' ? 1 : 1), 0);
   const order = S => Array.from({length: S.n}, (_, i) => (S.first + i) % S.n);
+  const after = (S, p) => Array.from({length: S.n - 1}, (_, i) => (p + 1 + i) % S.n);
   const guestsInInn = S => S.rooms.filter(r => r.guest).length;
   const openRooms = S => S.rooms.map((r, i) => r.key !== null ? i : -1).filter(i => i >= 0);
   const wealth = P => P.cash + 10 * P.checks;
   const buriedUnder = P => P.annexes.reduce((n, a) => n + a.under.length, 0);
   const keysOf = (S, p) => S.rooms.filter(r => r.key === p).length;
+  const mods = S => S.opts.mods || {};
+  const isTrailer = R => R.trailer != null;
+  const annexOfRoom = (S, R) => isTrailer(R) ? S.players[R.key].annexes.find(a => a.uid === R.trailer) : null;
+  const roomOfAnnex = (S, a) => a.inn ? S.rooms.findIndex(R => R.trailer === a.uid) : -1;
+  const evLive = (S, id) => !!(S.ev && S.ev.live && S.ev.cur === id);
+  const payable = P => P.corpses.filter(c => c !== P.snow);
+  const objs = P => P.objects || [];
+  function mkAnnex(S, id) { S.uid = (S.uid || 0) + 1; return {id, under: [], uid: S.uid}; }
 
-  function gain(S, p, amt) {
+  function gain(S, p, amt, fromSafe) {
     if (amt <= 0) return 0;
     const P = S.players[p];
     if (S.opts.unlimited) {
@@ -364,7 +476,13 @@ const Engine = (() => {
     }
     const got = Math.min(amt, CASH_CAP - P.cash);
     P.cash += got;
-    if (got < amt) P.wasted = (P.wasted || 0) + (amt - got);
+    if (got < amt) {
+      const x = amt - got, q = fromSafe ? undefined : after(S, p).find(q => count(S.players[q], 'safe'));
+      if (q !== undefined) {
+        const g = gain(S, q, x, true);
+        log(S, `Safe: ${pname(S, q)} collects ${g}F of the excess over 40F.`, 'money', q);
+      } else P.wasted = (P.wasted || 0) + x;
+    }
     return got;
   }
   function payCash(S, p, amt) { const P = S.players[p]; const paid = Math.min(P.cash, amt); P.cash -= paid; return paid; }
@@ -374,20 +492,22 @@ const Engine = (() => {
     const seed = (o.seed ?? Math.floor(Math.random() * 2 ** 31)) >>> 0;
     const seats = o.seats || [{name: 'You', type: 'human', level: 'normal'}, {name: 'Anna', type: 'ai', level: 'normal'},
       {name: 'Madeline', type: 'ai', level: 'normal'}, {name: 'Sebastien', type: 'ai', level: 'normal'}];
-    const n = seats.length;
+    const n = seats.length, m = o.mods || {};
+    const md = {notables: !!m.notables, carnies: !!m.carnies, events: !!(m.events && m.carnies), objects: !!m.objects, check50: !!m.check50};
     const S = {
-      v: 1, seed, rng: seed, n, seats: seats.map((s, i) => ({color: SEAT_COLORS[i], ...s})),
-      opts: {long: o.long !== false, unlimited: !!o.unlimited, fcfs: !!o.fcfs},
+      v: 2, seed, rng: seed, n, seats: seats.map((s, i) => ({color: SEAT_COLORS[i], ...s})),
+      opts: {long: o.long !== false, unlimited: !!o.unlimited, fcfs: !!o.fcfs, mods: md},
       players: [], rooms: Array.from({length: 8}, () => ({key: null, rs: null, guest: null})),
       entrance: [], exit: [], bistro: [], removed: [], box: [], first: 0, round: 1, empties: 0, season: 1, final: false,
       queue: [], pending: null, active: null, turnNo: 0, actRound: 0, draws: 0, log: [], last: null, over: false, lost: false, result: null, sim: false,
+      uid: 0, rnd: {letter: false, calls: false, invest: false}, ev: null, objUsed: [], objBox: [],
     };
-    const deck = shuffle(S, TRAVELER_IDS.slice());
+    const deck = shuffle(S, deckFor(md));
     S.removed = deck.splice(0, REMOVE[n][S.opts.long ? 'long' : 'short']);
     S.entrance = deck;
     const peas = PEASANT_IDS.slice();          // peasant1-4 and peasant5-8 are the two illustrations
     for (let p = 0; p < n; p++) {
-      S.players.push({cash: START_CASH, checks: START_CHECKS, hand: [peas[p], peas[p + 4]], annexes: [{id: 'barn', under: []}], corpses: [], wasted: 0});
+      S.players.push({cash: START_CASH, checks: START_CHECKS, hand: [peas[p], peas[p + 4]], annexes: [mkAnnex(S, 'barn')], corpses: [], wasted: 0, objects: [], snow: null});
     }
     const spare = PEASANT_IDS.filter(id => !S.players.some(P => P.hand.includes(id)));
     if (n === 1) S.bistro.push(spare.shift(), spare.shift());
@@ -395,7 +515,18 @@ const Engine = (() => {
     let r = 0;
     for (let p = 0; p < n; p++) S.rooms[r++].key = p;
     for (let k = 0; k < NEUTRAL_KEYS[n]; k++) S.rooms[r++].key = 'white';
+    if (md.events) S.ev = {deck: shuffle(S, Object.keys(EVENTS)), discard: [], cur: null, live: false};
     S.first = Math.floor(rnd(S) * n);
+    if (md.objects) {
+      const pile = shuffle(S, OBJECT_IDS.slice());
+      S.draft = {hands: S.players.map(() => pile.splice(0, 4))};
+      S.objBox.push(...pile);
+      for (let step = 0; step < 3; step++) {
+        for (let p = 0; p < n; p++) S.queue.push({k: 'draft', p, step});
+        S.queue.push({k: 'draftPass'});
+      }
+      S.queue.push({k: 'draftEnd'});
+    }
     log(S, `${pname(S, S.first)} is the greediest and starts. Round 1.`, 'round');
     queueRound(S);
     advance(S);
@@ -403,10 +534,14 @@ const Engine = (() => {
   }
 
   function queueRound(S) {
+    S.rnd = {letter: false, calls: false, invest: false};
     S.queue.push({k: 'welcome'});
+    if (mods(S).objects) S.queue.push({k: 'window', when: 'welcome'});
     for (let ar = 0; ar < 2; ar++) for (const p of order(S)) S.queue.push({k: 'turn', p, ar});
-    S.queue.push({k: 'police'}, {k: 'leave'});
+    S.queue.push({k: 'phase3'}, {k: 'police'}, {k: 'leave'}, {k: 'late'});
     for (const p of order(S)) S.queue.push({k: 'wages', p});
+    S.queue.push({k: 'afterWages'});
+    if (mods(S).objects) S.queue.push({k: 'window', when: 'end'});
     S.queue.push({k: 'roundEnd'});
   }
 
@@ -436,18 +571,41 @@ const Engine = (() => {
     return id;
   }
 
+  const roomName = (S, i) => isTrailer(S.rooms[i]) ? `${pname(S, S.rooms[i].key)}\u2019s trailer` : `room ${i + 1}`;
   function lodge(S, id, room) {
     const R = S.rooms[room];
     R.guest = id;
-    log(S, `${T(id).name} takes room ${room + 1}.`, 'lodge', null, {room});
+    log(S, `${T(id).name} takes ${roomName(S, room)}.`, 'lodge', null, {room});
     if (R.rs !== null) {
       const got = gain(S, R.rs, rank(id));
       if (rank(id)) log(S, `Room service: ${pname(S, R.rs)} earns ${got}F.`, 'money', R.rs);
     }
+    if (S.ev && !S.ev.cur && isCarnie(id)) {
+      if (!S.ev.deck.length) S.ev.deck = shuffle(S, S.ev.discard.splice(0));
+      S.ev.cur = S.ev.deck.shift();
+      log(S, `A carnie arrives: the event ${EVENTS[S.ev.cur].name} is revealed. It takes effect if a carnie is still in the inn at the end of the round.`, 'event');
+    }
   }
+  function vacate(R) { const id = R.guest; R.guest = null; R.cake = null; R.coffee = null; return id; }
 
   function run(S, t) {
     switch (t.k) {
+      case 'draft': {
+        S.pending = {t: 'draft', p: t.p, step: t.step, opts: S.draft.hands[t.p].slice()}; S.active = t.p;
+        return;
+      }
+      case 'draftPass': {
+        const h = S.draft.hands;
+        S.draft.hands = h.map((_, p) => h[(p - 1 + S.n) % S.n]);
+        return;
+      }
+      case 'draftEnd': {
+        for (const hand of S.draft.hands) S.objBox.push(...hand);
+        S.draft = null;
+        S.players.forEach((P, p) => { P.cash = OBJ_START_CASH - P.objects.reduce((n, o) => n + OBJECTS[o].cost, 0); });
+        log(S, 'Every innkeeper keeps 3 secret objects and starts with 10F minus their cost.', 'round');
+        return;
+      }
       case 'welcome': {
         const free = openRooms(S).filter(i => !S.rooms[i].guest);
         if (free.length && S.entrance.length) {
@@ -458,50 +616,98 @@ const Engine = (() => {
           return;
         }
         if (S.final && guestsInInn(S) < S.n) {
-          for (const R of S.rooms) if (R.guest) { S.exit.push(R.guest); R.guest = null; }
+          for (const R of S.rooms) if (R.guest) S.exit.push(vacate(R));
           log(S, 'Fewer travelers than players in the inn: the last round is not played.', 'season');
           S.queue = [];
           queueFinish(S);
         }
         return;
       }
+      case 'window': S.queue.unshift(...order(S).map(p => ({k: 'objwin', p, when: t.when}))); return;
+      case 'objwin':
+        if (objOptions(S, t.p, t.when).length) { S.pending = {t: 'objects', p: t.p, when: t.when}; S.active = t.p; }
+        return;
+      case 'study':
+        if (S.players[t.p].cash >= 10) { S.pending = {t: 'study', p: t.p}; S.active = t.p; }
+        return;
       case 'turn': {
         S.active = t.p; S.actRound = t.ar; S.turnNo++;
         S.pending = {t: 'turn', p: t.p, ar: t.ar};
         return;
       }
+      case 'phase3': {
+        if (S.ev && S.ev.cur) {
+          S.ev.live = S.rooms.some(R => R.guest && isCarnie(R.guest));
+          log(S, S.ev.live ? `Event ${EVENTS[S.ev.cur].name}: ${EVENTS[S.ev.cur].text.replace(/^At the end of the round, /, '')}`
+            : `No carnie is left in the inn: the event ${EVENTS[S.ev.cur].name} is discarded.`, 'event');
+        }
+        return;
+      }
       case 'police': {
         const cops = S.rooms.filter(R => R.guest && isPolice(R.guest));
-        if (!cops.length) return;
-        log(S, `The police investigate (${cops.map(R => T(R.guest).name).join(', ')}).`, 'police');
-        if (S.n === 1 && S.players[0].corpses.length) { lose(S, 'The police found an unburied corpse.'); return; }
-        const tasks = order(S).filter(p => S.players[p].corpses.length).map(p => ({k: 'grave', p, why: 'police'}));
-        S.queue.unshift(...tasks);
+        const herring = evLive(S, 'redherring');
+        S.rnd.invest = cops.length > 0 && !herring;
+        if (cops.length && herring) log(S, 'Red Herring: the police do not investigate this round.', 'police');
+        if (S.rnd.invest) log(S, `The police investigate (${cops.map(R => T(R.guest).name).join(', ')}).`, 'police');
+        if (S.rnd.letter) log(S, 'The Letter of Denunciation: every innkeeper with an unburied corpse calls the gravedigger.', 'police');
+        if (evLive(S, 'blackmail')) log(S, 'Blackmail: every innkeeper with an unburied corpse calls the gravedigger.', 'police');
+        S.rnd.calls = S.rnd.invest || S.rnd.letter || evLive(S, 'blackmail');
+        if (!S.rnd.calls) return;
+        S.queue.unshift(...(mods(S).objects ? [{k: 'window', when: 'police'}] : []), {k: 'police2'});
+        return;
+      }
+      case 'police2': {
+        if (S.n === 1 && S.rnd.invest && payable(S.players[0]).length) { lose(S, 'The police found an unburied corpse.'); return; }
+        S.queue.unshift(...order(S).filter(p => payable(S.players[p]).length).map(p => ({k: 'grave', p, why: 'police'})));
         return;
       }
       case 'grave': return gravedigger(S, t.p, t.why);
       case 'leave': {
+        const per = evLive(S, 'highseason') ? 4 : 1;
         for (let p = 0; p < S.n; p++) {
-          const occ = S.rooms.filter(R => R.key === p && R.guest).length, g = 2 * count(S.players[p], 'gardens');
-          const got = gain(S, p, occ + g);
-          if (occ + g) log(S, `${pname(S, p)} earns ${got}F (${occ} occupied room${occ === 1 ? '' : 's'}${g ? `, gardens +${g}` : ''}).`, 'money', p);
+          const P = S.players[p], occ = S.rooms.filter(R => R.key === p && R.guest).length, g = 2 * count(P, 'gardens');
+          const lab = count(P, 'laboratory') && S.players.some((Q, q) => q !== p && payable(Q).length) ? 3 * count(P, 'laboratory') : 0;
+          const tot = occ * per + g + lab;
+          const got = gain(S, p, tot);
+          if (tot) log(S, `${pname(S, p)} earns ${got}F (${occ} occupied room${occ === 1 ? '' : 's'}${per > 1 ? ' at 4F' : ''}${g ? `, gardens +${g}` : ''}${lab ? `, laboratory +${lab}` : ''}).`, 'money', p);
         }
-        for (const R of S.rooms) if (R.guest) { S.exit.push(R.guest); R.guest = null; }
+        for (const R of S.rooms) if (R.cake != null && R.guest) {
+          const got = gain(S, R.cake, 2 * rank(R.guest));
+          log(S, `Cake: ${T(R.guest).name} is still there, ${pname(S, R.cake)} earns ${got}F.`, 'money', R.cake);
+        }
+        for (const R of S.rooms) if (R.guest) S.exit.push(vacate(R)); else { R.cake = null; R.coffee = null; }
+        S.players.forEach((P, p) => { if (P.snow) { log(S, `${pname(S, p)}\u2019s snow pile melts: ${T(P.snow).name} is an unburied corpse again.`, 'leave', p); P.snow = null; } });
         log(S, 'The travelers leave the inn.', 'leave');
         return;
       }
+      case 'late': {
+        if (evLive(S, 'brokensafe')) S.players.forEach((P, p) => { const k = Math.ceil(P.checks / 2); if (k) { P.checks -= k; log(S, `Broken Safe: ${pname(S, p)} loses ${k} check${k === 1 ? '' : 's'}.`, 'wages', p); } });
+        if (evLive(S, 'fiasco')) S.players.forEach((P, p) => { if (P.hand.length) release(S, p, P.hand.slice(), 'Fiasco: '); });
+        S.players.forEach((P, p) => {
+          const c = count(P, 'pharmacy');
+          if (c && S.players.some((Q, q) => q !== p && Q.hand.length >= 3)) { const got = gain(S, p, 2 * c); log(S, `Pharmacy: ${pname(S, p)} earns ${got}F.`, 'money', p); }
+        });
+        if (evLive(S, 'pickpockets')) S.players.forEach((P, p) => { const k = Math.ceil(P.cash / 2); if (k) { P.cash -= k; log(S, `Pickpockets: ${pname(S, p)} loses ${k}F.`, 'wages', p); } });
+        return;
+      }
       case 'wages': {
-        const P = S.players[t.p], due = Math.max(0, P.hand.length - count(P, 'distillery'));
+        const P = S.players[t.p], w = evLive(S, 'extortion') ? 2 : 1, n = Math.max(0, P.hand.length - count(P, 'distillery')), due = w * n;
         if (!due) return;
-        if (P.cash >= due) { P.cash -= due; log(S, `${pname(S, t.p)} pays ${due}F in wages.`, 'wages', t.p); return; }
-        const paid = P.cash; P.cash = 0;
-        const k = due - paid;
-        log(S, `${pname(S, t.p)} can only pay ${paid}F in wages: ${k} accomplice${k === 1 ? '' : 's'} must go.`, 'wages', t.p);
+        const why = w > 1 ? ' (Extortion: twice)' : '';
+        if (P.cash >= due) { P.cash -= due; log(S, `${pname(S, t.p)} pays ${due}F in wages${why}.`, 'wages', t.p); return; }
+        const units = Math.floor(P.cash / w), paid = units * w; P.cash -= paid;
+        const k = n - units;
+        log(S, `${pname(S, t.p)} can only pay ${paid}F in wages${why}: ${k} accomplice${k === 1 ? '' : 's'} must go.`, 'wages', t.p);
         if (k >= P.hand.length) { release(S, t.p, P.hand.slice()); return; }
         S.pending = {t: 'release', p: t.p, k}; S.active = t.p;
         return;
       }
+      case 'afterWages': {
+        if (evLive(S, 'cirrhosis') && S.bistro.length) { S.box.push(S.bistro.pop()); log(S, 'Cirrhosis: a peasant leaves the bistro for good.', 'wages'); }
+        return;
+      }
       case 'roundEnd': {
+        if (S.ev && S.ev.cur) { S.ev.discard.push(S.ev.cur); S.ev.cur = null; S.ev.live = false; }
         if (S.final) { queueFinish(S); return; }
         S.first = (S.first + 1) % S.n;
         S.round++;
@@ -526,34 +732,35 @@ const Engine = (() => {
   }
 
   // Gravedigger: 10F per unburied corpse, from a check or 10 cash each (player's choice); if both run out, all remaining cash.
-  function graveRange(P) {
-    const k = P.corpses.length, maxC = Math.min(P.checks, k);
+  function graveRange(P, k = payable(P).length) {
+    const maxC = Math.min(P.checks, k);
     // fewest checks: as many 10F units from cash as possible; any shortfall must use checks first
     const minC = Math.min(maxC, Math.max(0, k - Math.floor(P.cash / 10)));
     return [minC, maxC];
   }
   function gravedigger(S, p, why) {
     const P = S.players[p];
-    if (!P.corpses.length) return;
+    if (!payable(P).length) return;
     const [lo, hi] = graveRange(P);
     if (lo === hi) { payGrave(S, p, lo); return; }
     S.pending = {t: 'grave', p, why, lo, hi}; S.active = p;
   }
   function payGrave(S, p, c) {
-    const P = S.players[p], k = P.corpses.length;
+    const P = S.players[p], dead = payable(P), k = dead.length;
     P.checks -= c;
     const cash = payCash(S, p, (k - c) * 10);
     log(S, `${pname(S, p)} pays the gravedigger for ${k} corpse${k === 1 ? '' : 's'}: ${[c ? `${c} check${c === 1 ? '' : 's'}` : '', cash ? `${cash}F` : ''].filter(Boolean).join(' and ') || 'nothing left to pay'}.`, 'police', p);
-    S.box.push(...P.corpses.splice(0));
+    P.corpses = P.corpses.filter(id => !dead.includes(id));
+    S.box.push(...dead);
   }
 
-  function release(S, p, ids) {
+  function release(S, p, ids, why = '') {
     const P = S.players[p];
     for (const id of ids) {
       P.hand.splice(P.hand.indexOf(id), 1);
       if (isPeasant(id)) S.bistro.push(id); else S.exit.push(id);
     }
-    log(S, `${pname(S, p)} lets go of ${ids.map(id => T(id).name).join(', ')}.`, 'wages', p);
+    log(S, `${why}${pname(S, p)} lets go of ${ids.map(id => T(id).name).join(', ')}.`, 'wages', p);
   }
 
   function score(S) {
@@ -586,51 +793,85 @@ const Engine = (() => {
   }
 
   // ---------- costs and options ----------
+  const buildCard = (S, m) => m.room != null ? S.rooms[m.room] && S.rooms[m.room].guest : m.card;
   function cost(S, p, m) {
     const P = S.players[p];
     switch (m.t) {
       case 'bribe': return Math.max(0, m.rooms.reduce((n, i) => n + rank(S.rooms[i].guest), 0) - count(P, 'parlor'));
-      case 'build': return Math.max(0, rank(m.card) - count(P, 'workshop'));
-      case 'kill': return m.rooms.reduce((n, i) => n + rank(S.rooms[i].guest), 0);
-      case 'bury': return Math.max(0, m.items.reduce((n, it) => n + rank(it.id), 0) - count(P, 'cellar'));
+      case 'build': return Math.max(0, brank(buildCard(S, m)) - count(P, 'workshop'));
+      case 'kill': return Math.max(0, m.rooms.reduce((n, i) => n + rank(S.rooms[i].guest), 0) - count(P, 'bearcage'));
+      case 'bury': return Math.max(0, m.items.reduce((n, it) => n + brank(it.id), 0) - count(P, 'cellar'));
       default: return 0;
     }
   }
   const actionOf = m => ({bribe: 'bribe', peasants: 'bribe', build: 'build', kill: 'kill', killPeasant: 'kill', bury: 'bury'}[m.t]);
-  // Where a paid card goes: back to hand (aptitude, or any card for Bury with a Chapel), bistro (peasants) or the Exit Stack.
-  function payDest(S, p, action, id) {
-    if (action === 'bury' && count(S.players[p], 'chapel')) return 'hand';
-    if (APTITUDE[color(id)] === action) return 'hand';
+  // Where a paid card goes: back to hand (aptitude, or every card with a Chapel, Nook or no-discard object), bistro (peasants) or the Exit Stack.
+  function payDest(S, p, action, id, used = []) {
+    const P = S.players[p];
+    if (action === 'bury' && (count(P, 'chapel') || used.includes('bible'))) return 'hand';
+    if (action === 'bribe' && (count(P, 'nook') || used.includes('liquor'))) return 'hand';
+    if (action === 'build' && used.includes('hammer')) return 'hand';
+    if (action === 'kill' && used.includes('wolftrap')) return 'hand';
+    if (apt(id) === action) return 'hand';
     return isPeasant(id) ? 'bistro' : 'exit';
   }
 
   // Legal targets for the UI and the AI: what the actor may start this turn.
   function options(S, p) {
     const P = S.players[p], hand = P.hand.length;
-    const occ = S.rooms.map((R, i) => R.guest ? i : -1).filter(i => i >= 0);
-    const o = {bribe: [], kill: [], build: [], bury: [], peasants: 0, killPeasant: false,
+    const occ = S.rooms.map((R, i) => R.guest && R.coffee == null ? i : -1).filter(i => i >= 0);
+    const o = {bribe: [], kill: [], build: [], bury: [], wheel: [], peasants: 0, killPeasant: false,
       multiBribe: count(P, 'store') > 0, multiKill: count(P, 'butcher') > 0, multiBury: count(P, 'crypt') > 0};
+    const trailerOk = id => T(id).effect !== 'trailer' || keysOf(S, p) < MAX_KEYS;
     for (const i of occ) {
       if (cost(S, p, {t: 'bribe', rooms: [i]}) <= hand) o.bribe.push(i);
       if (cost(S, p, {t: 'kill', rooms: [i]}) <= hand) o.kill.push(i);
+      const g = S.rooms[i].guest;
+      if (objs(P).includes('wheelbarrow') && canAnnex(g) && trailerOk(g) && cost(S, p, {t: 'build', room: i}) <= hand) o.wheel.push(i);
     }
-    for (const id of P.hand) if (canAnnex(id) && cost(S, p, {t: 'build', card: id}) <= hand - 1) o.build.push(id);
-    const slots = S.players.reduce((n, Q) => n + Q.annexes.reduce((m, a) => m + Math.max(0, annexFree(a)), 0), 0);
-    if (slots) for (const id of P.corpses) if (cost(S, p, {t: 'bury', items: [{id}]}) <= hand) o.bury.push(id);
+    for (const id of P.hand) if (canAnnex(id) && trailerOk(id) && cost(S, p, {t: 'build', card: id}) <= hand - 1) o.build.push(id);
+    for (const id of P.corpses) if (annexTargets(S, [], id, p).length && cost(S, p, {t: 'bury', items: [{id}]}) <= hand) o.bury.push(id);
     o.peasants = Math.min(S.bistro.length, count(P, 'brewery') ? 4 : 2);
     o.killPeasant = S.bistro.length > 0;
     return o;
   }
 
-  function annexTargets(S, extra = []) {
-    // [{p, i, free}] with free slots, accounting for corpses already assigned in this action
-    const out = [];
+  function annexTargets(S, extra = [], id = null, p = null) {
+    // [{p, i, free}]: annexes that can take this corpse, accounting for corpses already assigned in this action
+    const sp = id ? special(id) : null, need = sp === 'twins' ? 2 : sp === 'dwarf' ? 0 : 1, out = [];
     S.players.forEach((Q, q) => Q.annexes.forEach((a, i) => {
-      const used = extra.filter(e => e.owner === q && e.annex === i).length;
-      if (annexFree(a) - used > 0) out.push({p: q, i, free: annexFree(a) - used});
+      if (a.inn && S.rooms.some(R => R.trailer === a.uid && R.guest)) return;
+      if (sp === 'lady' && q === p) return;
+      const free = annexFree(a) - extra.filter(e => e.owner === q && e.annex === i).reduce((n, e) => n + weight(e.id), 0);
+      if (sp === 'dwarf' || free >= need) out.push({p: q, i, free});
     }));
     return out;
   }
+
+  // Objects that can be played now, outside an action: [{id, room?, corpse?, to?, owner?}].
+  function objOptions(S, p, when) {
+    const P = S.players[p], has = id => objs(P).includes(id), out = [];
+    if (S.over || !objs(P).length) return out;
+    if (when === 'welcome') {
+      S.rooms.forEach((R, i) => {
+        if (!R.guest) return;
+        if (has('coffee') && R.coffee == null) out.push({id: 'coffee', room: i});
+        if (has('cake') && R.cake == null) out.push({id: 'cake', room: i});
+        if (has('poison') && R.coffee == null) out.push({id: 'poison', room: i});
+      });
+      if (has('rug')) for (const c of P.corpses) for (let q = 0; q < S.n; q++) if (q !== p) out.push({id: 'rug', corpse: c, to: q});
+      if (has('letter') && !S.rnd.letter) out.push({id: 'letter'});
+    } else if (when === 'police') {
+      if (!S.rnd.calls) return out;
+      if (has('snowpile') && !P.snow) for (const c of payable(P)) out.push({id: 'snowpile', corpse: c});
+      if (has('tomb')) S.players.forEach((Q, q) => { for (const c of payable(Q)) out.push({id: 'tomb', owner: q, corpse: c}); });
+    } else if (when === 'end') {
+      const max = Math.max(...S.players.map(buriedUnder));
+      if (has('confessional') && buriedUnder(P) < max) out.push({id: 'confessional'});
+    }
+    return out;
+  }
+  const samePlay = (a, b) => ['id', 'room', 'corpse', 'to', 'owner'].every(k => a[k] === b[k]);
 
   // ---------- validation ----------
   function check(S, m) {
@@ -640,13 +881,24 @@ const Engine = (() => {
     const p = pd.p, P = S.players[p];
     const uniq = a => new Set(a).size === a.length;
     switch (pd.t) {
+      case 'draft':
+        if (m.t !== 'draft' || !pd.opts.includes(m.id)) return 'Choose one of the objects offered.';
+        return '';
+      case 'objects':
+        if (m.t !== 'obj') return 'Play an object or carry on.';
+        if (m.play && !objOptions(S, p, pd.when).some(o => samePlay(o, m.play))) return 'That object cannot be played like that now.';
+        return '';
+      case 'study':
+        if (m.t !== 'study') return 'Answer the Study offer.';
+        if (m.yes && P.cash < 10) return 'You need 10F.';
+        return '';
       case 'lodge':
         if (m.t !== 'lodge') return 'Choose a room for the traveler.';
         if (!S.rooms[m.room] || S.rooms[m.room].key === null || S.rooms[m.room].guest) return 'That room is not open and free.';
         return '';
       case 'rs': {
         const R = S.rooms[m.room];
-        if (m.t !== 'rs' || !R || R.key === null || R.rs !== null) return 'Choose a door with a Key and no Room Service token.';
+        if (m.t !== 'rs' || !R || R.key === null || R.rs !== null || isTrailer(R)) return 'Choose a door with a Key and no Room Service token.';
         return '';
       }
       case 'monk':
@@ -667,12 +919,15 @@ const Engine = (() => {
       if (k < 0 && P.checks < -k) return 'Not enough checks.';
       return '';
     }
-    const pay = m.pay || [];
+    const pay = m.pay || [], used = m.objs || [];
     if (!uniq(pay) || !pay.every(id => P.hand.includes(id))) return 'Pay with distinct cards from your hand.';
+    if (!uniq(used) || !used.every(o => objs(P).includes(o) && OBJECTS[o].when === actionOf(m))) return 'That object does not fit this action.';
+    if (m.t === 'peasants' && used.length) return 'Bribing peasants costs nothing: no object needed.';
     switch (m.t) {
       case 'bribe': case 'kill': {
         if (!m.rooms || !m.rooms.length || !uniq(m.rooms)) return 'Choose a traveler.';
         if (!m.rooms.every(i => S.rooms[i] && S.rooms[i].guest)) return 'That room is empty.';
+        if (m.rooms.some(i => S.rooms[i].coffee != null)) return 'That traveler has had his coffee: he cannot be bribed or killed this round.';
         const multi = count(P, m.t === 'bribe' ? 'store' : 'butcher') > 0;
         if (m.rooms.length > 1 && !multi) return `Only one traveler per action without the ${m.t === 'bribe' ? 'Store' : 'Butcher\u2019s Shop'}.`;
         break;
@@ -683,20 +938,34 @@ const Engine = (() => {
         break;
       }
       case 'killPeasant': if (!S.bistro.length) return 'The bistro is empty.'; break;
-      case 'build':
-        if (!P.hand.includes(m.card) || !canAnnex(m.card)) return 'Choose a card with an annex from your hand.';
-        if (pay.includes(m.card)) return 'The annex card cannot pay for itself.';
+      case 'build': {
+        const id = buildCard(S, m);
+        if (m.room != null) {
+          if (!used.includes('wheelbarrow')) return 'Only the Wheelbarrow builds the annex of a traveler in a room.';
+          if (!id) return 'That room is empty.';
+          if (S.rooms[m.room].coffee != null) return 'That traveler has had his coffee.';
+        } else {
+          if (used.includes('wheelbarrow')) return 'The Wheelbarrow builds from a room: choose a traveler in the inn.';
+          if (!P.hand.includes(m.card)) return 'Choose a card with an annex from your hand.';
+          if (pay.includes(m.card)) return 'The annex card cannot pay for itself.';
+        }
+        if (!canAnnex(id)) return 'That traveler has no annex.';
+        if (T(id).effect === 'trailer' && keysOf(S, p) >= MAX_KEYS) return 'You have no Key token left for a trailer.';
         break;
+      }
       case 'bury': {
         if (!m.items || !m.items.length) return 'Choose a corpse.';
         if (m.items.length > 1 && !count(P, 'crypt')) return 'Only one corpse per action without the Crypt.';
         if (!uniq(m.items.map(it => it.id)) || !m.items.every(it => P.corpses.includes(it.id))) return 'Choose your own unburied corpses.';
-        const used = [];
+        if (used.includes('quicklime') && !m.items.some(it => it.owner !== p)) return 'Quicklime is for a burial under another player\u2019s annex.';
+        const done = [];
         for (const it of m.items) {
-          const Q = S.players[it.owner], a = Q && Q.annexes[it.annex];
-          if (!a) return 'Choose an annex.';
-          if (annexFree(a) - used.filter(u => u.owner === it.owner && u.annex === it.annex).length <= 0) return 'That annex is full.';
-          used.push(it);
+          if (!S.players[it.owner] || !S.players[it.owner].annexes[it.annex]) return 'Choose an annex.';
+          if (!annexTargets(S, done, it.id, p).some(x => x.p === it.owner && x.i === it.annex)) {
+            const sp = special(it.id);
+            return sp === 'twins' ? 'The Twins need an annex with 2 free places.' : sp === 'lady' ? 'The Bearded Lady goes under another player\u2019s annex.' : 'That annex is full or occupied.';
+          }
+          done.push(it);
         }
         break;
       }
@@ -715,6 +984,17 @@ const Engine = (() => {
     S.pending = null;
     S.last = {p, m: structuredClone(m), round: S.round};
     switch (pd.t) {
+      case 'draft':
+        S.draft.hands[p].splice(S.draft.hands[p].indexOf(m.id), 1);
+        P.objects.push(m.id);
+        log(S, `${pname(S, p)} keeps an object.`, 'round', p);
+        break;
+      case 'objects':
+        if (m.play) { playObj(S, p, m.play); S.queue.unshift({k: 'objwin', p, when: pd.when}); }
+        break;
+      case 'study':
+        if (m.yes) { P.cash -= 10; P.checks++; log(S, `Study: ${pname(S, p)} also launders 10F into a check.`, 'pass', p); }
+        break;
       case 'lodge': lodge(S, pd.card, m.room); break;
       case 'rs':
         S.rooms[m.room].rs = p;
@@ -732,10 +1012,58 @@ const Engine = (() => {
     return S;
   }
 
-  function payWith(S, p, action, pay) {
+  function useObjs(S, p, list) {
+    const P = S.players[p];
+    for (const o of list) { P.objects.splice(P.objects.indexOf(o), 1); S.objUsed.push(o); }
+    if (list.length) log(S, `${pname(S, p)} plays the ${list.map(o => OBJECTS[o].name).join(' and the ')}.`, 'object', p);
+  }
+
+  function playObj(S, p, pl) {
+    const P = S.players[p], who = pname(S, p);
+    useObjs(S, p, [pl.id]);
+    switch (pl.id) {
+      case 'coffee': {
+        const R = S.rooms[pl.room]; R.coffee = p;
+        const got = gain(S, p, rank(R.guest));
+        log(S, `Coffee for ${T(R.guest).name} in ${roomName(S, pl.room)}: ${who} earns ${got}F, and he cannot be bribed or killed this round.`, 'object', p, {room: pl.room});
+        break;
+      }
+      case 'cake': S.rooms[pl.room].cake = p; log(S, `${who} leaves a cake in ${roomName(S, pl.room)}.`, 'object', p, {room: pl.room}); break;
+      case 'poison': {
+        const R = S.rooms[pl.room], id = vacate(R), to = typeof R.key === 'number' ? R.key : p;
+        S.players[to].corpses.push(id);
+        log(S, `${who} poisons ${T(id).name} in ${roomName(S, pl.room)}: the corpse goes to ${to === p ? 'them' : pname(S, to)}.`, 'kill', p, {room: pl.room});
+        break;
+      }
+      case 'rug':
+        P.corpses.splice(P.corpses.indexOf(pl.corpse), 1); S.players[pl.to].corpses.push(pl.corpse);
+        log(S, `${who} rolls ${T(pl.corpse).name} in a rug and leaves the corpse with ${pname(S, pl.to)}.`, 'object', p);
+        break;
+      case 'letter': S.rnd.letter = true; log(S, `${who} sends a Letter of Denunciation: everyone with an unburied corpse will pay the gravedigger.`, 'object', p); break;
+      case 'snowpile': P.snow = pl.corpse; log(S, `${who} hides ${T(pl.corpse).name} under a snow pile.`, 'object', p); break;
+      case 'tomb': {
+        const Q = S.players[pl.owner];
+        Q.corpses.splice(Q.corpses.indexOf(pl.corpse), 1); S.box.push(pl.corpse);
+        const got = gain(S, p, T(pl.corpse).money / 2);
+        log(S, `${who} lays ${T(pl.corpse).name} (${pl.owner === p ? 'their own' : pname(S, pl.owner) + '\u2019s'} corpse) in the tomb and earns ${got}F.`, 'object', p);
+        break;
+      }
+      case 'confessional': {
+        const max = Math.max(...S.players.map(buriedUnder)), tied = S.players.map((Q, q) => buriedUnder(Q) === max ? q : -1).filter(q => q >= 0);
+        const each = tied.length > 1 ? 3 : 6;
+        for (const q of tied) {
+          const paid = payCash(S, q, each), got = gain(S, p, paid);
+          log(S, `Confessional: ${pname(S, q)} pays ${paid}F to ${who}${got < paid ? ` (${got}F kept)` : ''}.`, 'money', p);
+        }
+        break;
+      }
+    }
+  }
+
+  function payWith(S, p, action, pay, used) {
     const P = S.players[p], back = [], gone = [];
     for (const id of pay) {
-      const d = payDest(S, p, action, id);
+      const d = payDest(S, p, action, id, used);
       P.hand.splice(P.hand.indexOf(id), 1);
       if (d === 'hand') back.push(id); else { (d === 'bistro' ? S.bistro : S.exit).push(id); gone.push(id); }
     }
@@ -749,18 +1077,23 @@ const Engine = (() => {
     const P = S.players[p], who = pname(S, p);
     if (m.t === 'pass') {
       const k = m.launder | 0;
-      if (k > 0) { P.cash -= 10 * k; P.checks += k; log(S, `${who} passes and launders ${10 * k}F into ${k} check${k === 1 ? '' : 's'}.`, 'pass', p); }
-      else if (k < 0) { P.checks += k; const got = gain(S, p, -10 * k); log(S, `${who} passes and cashes ${-k} check${k === -1 ? '' : 's'} for ${got}F.`, 'pass', p); }
+      if (k > 0) {
+        P.cash -= 10 * k; P.checks += k; log(S, `${who} passes and launders ${10 * k}F into ${k} check${k === 1 ? '' : 's'}.`, 'pass', p);
+        S.queue.unshift(...after(S, p).filter(q => count(S.players[q], 'study')).map(q => ({k: 'study', p: q})));
+      } else if (k < 0) { P.checks += k; const got = gain(S, p, -10 * k); log(S, `${who} passes and cashes ${-k} check${k === -1 ? '' : 's'} for ${got}F.`, 'pass', p); }
       else log(S, `${who} passes.`, 'pass', p);
       return;
     }
-    const act = actionOf(m), paid = payWith(S, p, act, m.pay || []), pt = payText(paid);
+    const used = m.objs || [], act = actionOf(m), paid = payWith(S, p, act, m.pay || [], used), pt = payText(paid);
+    useObjs(S, p, used);
     const suffix = pt ? ` (${pt})` : '';
     switch (m.t) {
       case 'bribe': {
-        const ids = m.rooms.map(i => { const id = S.rooms[i].guest; S.rooms[i].guest = null; return id; });
+        const ids = m.rooms.map(i => vacate(S.rooms[i]));
         P.hand.push(...ids);
         log(S, `${who} bribes ${names(ids)}${suffix}.`, 'bribe', p, {rooms: m.rooms});
+        const c = ids.filter(isCarnie).length * count(P, 'booth');
+        if (c) { const got = gain(S, p, 3 * c); log(S, `Carnival Booth: ${who} earns ${got}F.`, 'money', p); }
         break;
       }
       case 'peasants': {
@@ -769,39 +1102,48 @@ const Engine = (() => {
         log(S, `${who} bribes ${m.n} peasant${m.n === 1 ? '' : 's'} from the bistro.`, 'bribe', p);
         break;
       }
-      case 'kill': {
-        const ids = m.rooms.map(i => { const id = S.rooms[i].guest; S.rooms[i].guest = null; return id; });
+      case 'kill': case 'killPeasant': {
+        const ids = m.t === 'kill' ? m.rooms.map(i => vacate(S.rooms[i])) : [S.bistro.shift()];
+        log(S, m.t === 'kill' ? `${who} kills ${names(ids)}${suffix}.` : `${who} kills a peasant in the bistro.`, 'kill', p, m.rooms ? {rooms: m.rooms} : undefined);
+        if (used.includes('well')) {
+          const w = ids.shift(); S.box.push(w);
+          const got = gain(S, p, T(w).money / 2);
+          log(S, `${who} drops ${T(w).name} down the well and keeps ${got}F.`, 'kill', p);
+        }
         P.corpses.push(...ids);
-        log(S, `${who} kills ${names(ids)}${suffix}.`, 'kill', p, {rooms: m.rooms});
-        break;
-      }
-      case 'killPeasant': {
-        const id = S.bistro.shift();
-        P.corpses.push(id);
-        log(S, `${who} kills a peasant in the bistro.`, 'kill', p);
         break;
       }
       case 'bury': {
-        for (const it of m.items) {
+        m.items.forEach((it, k) => {
           P.corpses.splice(P.corpses.indexOf(it.id), 1);
-          const a = S.players[it.owner].annexes[it.annex];
+          const Q = S.players[it.owner], a = Q.annexes[it.annex], ri = roomOfAnnex(S, a);
           a.under.push(it.id);
+          if (special(it.id) === 'twins') a.under.push('~' + (S.removed.length ? S.removed.shift() : 'box'));
           const money = T(it.id).money, where = a.id === 'barn' ? 'barn' : T(a.id).annex;
           if (it.owner === p) {
             const got = gain(S, p, money);
-            log(S, `${who} buries ${T(it.id).name} under ${it.owner === p ? 'their' : ''} ${where} and takes ${got}F${suffix}.`, 'bury', p);
+            log(S, `${who} buries ${T(it.id).name} under their ${where} and takes ${got}F${suffix}.`, 'bury', p);
+          } else if (used.includes('quicklime')) {
+            const got = gain(S, p, money);
+            log(S, `${who} buries ${T(it.id).name} in quicklime under ${pname(S, it.owner)}\u2019s ${where} and takes all ${got}F${suffix}.`, 'bury', p);
           } else {
             const g1 = gain(S, p, money / 2), g2 = gain(S, it.owner, money / 2);
             log(S, `${who} buries ${T(it.id).name} under ${pname(S, it.owner)}\u2019s ${where}: ${g1}F each way (${g2}F to ${pname(S, it.owner)})${suffix}.`, 'bury', p);
           }
-        }
+          if (k === 0 && used.includes('goldteeth')) { const got = gain(S, p, 2 * brank(it.id)); log(S, `Gold teeth: ${who} earns ${got}F more.`, 'money', p); }
+          if (ri >= 0) {
+            S.rooms.splice(ri, 1); a.inn = false;
+            log(S, `The trailer leaves the inn for ${pname(S, it.owner)}\u2019s area and its Key goes back.`, 'build', it.owner);
+          }
+        });
         break;
       }
       case 'build': {
-        P.hand.splice(P.hand.indexOf(m.card), 1);
-        P.annexes.push({id: m.card, under: []});
-        log(S, `${who} builds the ${T(m.card).annex}${suffix}.`, 'build', p, {card: m.card});
-        built(S, p, m.card);
+        const id = buildCard(S, m);
+        if (m.room != null) vacate(S.rooms[m.room]); else P.hand.splice(P.hand.indexOf(id), 1);
+        P.annexes.push(mkAnnex(S, id));
+        log(S, `${who} builds the ${T(id).annex}${m.room != null ? ` of ${T(id).name}, wheeled out of ${roomName(S, m.room)}` : ''}${suffix}.`, 'build', p, {card: id});
+        built(S, p, id);
         break;
       }
     }
@@ -818,8 +1160,17 @@ const Engine = (() => {
       case 'dining': earn(9); break;
       case 'detached': earn(18); break;
       case 'park': case 'grocery': case 'bishopric': case 'stables': earn(4); break;
+      case 'winecask': earn(3 * S.rooms.filter(R => R.key === 'white' && R.guest).length, 'occupied neutral rooms'); break;
+      case 'silkfarm': earn(3 * S.rooms.filter(R => R.key === p && R.guest && !isTrailer(R)).length, 'your occupied rooms'); break;
+      case 'trailer': {
+        const a = P.annexes[P.annexes.length - 1];
+        a.inn = true;
+        S.rooms.push({key: p, rs: null, guest: null, trailer: a.uid});
+        log(S, `${pname(S, p)}\u2019s trailer joins the inn with one of their Keys.`, 'build', p, {room: S.rooms.length - 1});
+        break;
+      }
       case 'roomservice': {
-        const doors = S.rooms.map((R, i) => R.key !== null && R.rs === null ? i : -1).filter(i => i >= 0);
+        const doors = S.rooms.map((R, i) => R.key !== null && R.rs === null && !isTrailer(R) ? i : -1).filter(i => i >= 0);
         if (doors.length === 1) { S.rooms[doors[0]].rs = p; log(S, `${pname(S, p)} puts a Room Service token on room ${doors[0] + 1}.`, 'build', p); }
         else if (doors.length) { S.pending = {t: 'rs', p}; S.active = p; }
         break;
@@ -836,15 +1187,15 @@ const Engine = (() => {
   // Cheapest payment: cards that come back first, then peasants (back to the bistro), then the least useful.
   function keepValue(S, p, id) {
     const t = T(id);
-    let v = 1 + (APTITUDE[t.color] ? 1.5 : 0);
-    if (t.annex) v += 1.5 + t.rank * (S.season === 2 ? 0.8 : 1.4);
+    let v = 1 + (apt(id) ? 1.5 : 0);
+    if (t.annex) v += 1.5 + t.brank * (S.season === 2 ? 0.8 : 1.4);
     if (t.effect === 'detached' || t.effect === 'dining') v += 3;
     return v;
   }
   function suggestPay(S, p, m) {
-    const P = S.players[p], act = actionOf(m), need = cost(S, p, m);
+    const P = S.players[p], act = actionOf(m), need = cost(S, p, m), used = m.objs || [];
     const pool = P.hand.filter(id => id !== m.card);
-    const score = id => payDest(S, p, act, id) === 'hand' ? -10 + rank(id) * 0.01 : isPeasant(id) ? 0 : keepValue(S, p, id);
+    const score = id => payDest(S, p, act, id, used) === 'hand' ? -10 + rank(id) * 0.01 : isPeasant(id) ? 0 : keepValue(S, p, id);
     pool.sort((a, b) => score(a) - score(b) || (a < b ? -1 : 1));
     return pool.length >= need ? pool.slice(0, need) : null;
   }
@@ -858,9 +1209,9 @@ const Engine = (() => {
     return X.players.map((P, i) => ({p: i, cash: P.cash - before[i].cash, checks: P.checks - before[i].checks, hand: P.hand.length - before[i].hand.length}));
   }
 
-  return {newGame, apply, check, advance, options, cost, suggestPay, payDest, annexTargets, preview, result, shuffle, rnd,
-    count, colorAnnexes, annexRank, annexFree, rank, color, isPolice, isPeasant, canAnnex, guestsInInn, openRooms, wealth, buriedUnder, keysOf,
-    actionOf, pname, order, graveRange, keepValue};
+  return {newGame, apply, check, advance, options, cost, suggestPay, payDest, annexTargets, objOptions, preview, result, shuffle, rnd,
+    count, colorAnnexes, annexRank, annexFree, rank, brank, apt, color, isPolice, isPeasant, isCarnie, special, isFiller, canAnnex, guestsInInn, openRooms,
+    wealth, buriedUnder, keysOf, actionOf, pname, order, graveRange, keepValue, payable, mods, isTrailer, annexOfRoom, roomOfAnnex, evLive, roomName};
 })();
 
 // ===== AI innkeepers: same engine, heuristic evaluation. Normal is deterministic for a given state. =====
@@ -874,10 +1225,14 @@ const AI = (() => {
     return Math.max(0, (S.entrance.length + later) / open);
   }
 
-  const PERSIST = {workshop: 1.6, parlor: 1.6, cellar: 1.6, store: 1.1, butcher: 1.1, crypt: 1, chapel: 1, brewery: .5, distillery: 1, gardens: 2};
+  const PERSIST = {workshop: 1.6, parlor: 1.6, cellar: 1.6, store: 1.1, butcher: 1.1, crypt: 1, chapel: 1, brewery: .5, distillery: 1, gardens: 2,
+    bearcage: 1.6, booth: .6, nook: 1.4, laboratory: 1.8, pharmacy: 1.2, safe: .8, study: .4, trailer: .7};
+  // What an object in hand is worth to its holder (cost is paid at setup, so only the future use counts).
+  const OBJ_WORTH = {goldteeth: 3, wheelbarrow: 4, hammer: 3, tomb: 5, coffee: 2.5, wolftrap: 3, cake: 3, bible: 3, confessional: 4,
+    rug: 4, poison: 6, snowpile: 6, letter: 3, liquor: 3, well: 6, quicklime: 5};
   function annexWorth(S, p, id, R) {
     const t = T(id), P = S.players[p], w = Math.min(R, 4);
-    let v = t.rank * 4.5 * Math.min(1, R / 2);                        // burial slots
+    let v = t.brank * 4.5 * Math.min(1, R / 2);                       // burial slots
     switch (t.effect) {
       case 'chandelier': v += 4; break;
       case 'bed': v += 6; break;
@@ -886,6 +1241,8 @@ const AI = (() => {
       case 'kiosk': v += E.colorAnnexes(P, 'blue') + 1; break;
       case 'vegetable': v += E.colorAnnexes(P, 'red') + 1; break;
       case 'altar': v += E.colorAnnexes(P, 'purple') + 1; break;
+      case 'winecask': v += 3 * S.rooms.filter(r => r.key === 'white' && r.guest).length; break;
+      case 'silkfarm': v += 3 * S.rooms.filter(r => r.key === p && r.guest && !E.isTrailer(r)).length; break;
       case 'park': case 'grocery': case 'bishopric': case 'stables': v += 4 + endBonus(S, t.effect, R); break;
       case 'greenhouse': v += 3 * (P.checks + R * .6); break;
       case 'roomservice': v += 1.4 * w; break;
@@ -908,20 +1265,21 @@ const AI = (() => {
     const cops = S.rooms.some(r => r.guest && E.isPolice(r.guest)) && S.queue.some(t => t.k === 'police');
     const myTurns = S.queue.filter(t => t.k === 'turn' && t.p === p).length + (S.pending && S.pending.t === 'turn' && S.pending.p === p ? 1 : 0);
     const free = P.annexes.reduce((n, a) => n + Math.max(0, E.annexFree(a)), 0);
-    const anyFree = S.players.some(Q => Q.annexes.some(a => E.annexFree(a) > 0));
+    const anyFree = S.players.some((Q, q) => q !== p && Q.annexes.some(a => E.annexFree(a) > 0));
     let used = 0, turnsLeft = myTurns * (E.count(P, 'crypt') ? 3 : 1), handLeft = P.hand.length;
     const lastChance = !myTurns && (S.phase === 'final' || (S.final && !S.queue.some(t => t.k === 'turn')));
-    for (const id of P.corpses.slice().sort((a, b) => T(b).money - T(a).money)) {
-      const t = T(id), c = Math.max(0, t.rank - E.count(P, 'cellar')), own = used < free, slot = own || anyFree;
-      const money = t.money * (own ? 1 : .5);
+    for (const id of E.payable(P).slice().sort((a, b) => T(b).money - T(a).money)) {
+      const t = T(id), sp = E.special(id), c = Math.max(0, t.brank - E.count(P, 'cellar'));
+      const need = sp === 'twins' ? 2 : sp === 'dwarf' ? 0 : 1, own = sp !== 'lady' && used + need <= free, slot = own || anyFree || sp === 'dwarf';
+      const money = t.money * (own || sp === 'dwarf' ? 1 : .5);
       let cv;
       if (cops || lastChance) {
         // the investigation (or the end) comes before the next round: bury now or pay 10F
-        if (slot && turnsLeft > 0 && handLeft >= c) { cv = money - c * 1.2 - 1; turnsLeft--; handLeft -= c; if (own) used++; }
+        if (slot && turnsLeft > 0 && handLeft >= c) { cv = money - c * 1.2 - 1; turnsLeft--; handLeft -= c; if (own) used += need; }
         else cv = -10;
       } else {
         cv = (slot ? money * .8 : money * .2) - c * 1.2 - 3;
-        if (own) used++;
+        if (own) used += need;
       }
       v += cv;
     }
@@ -938,9 +1296,22 @@ const AI = (() => {
     const wages = Math.min(R, 2.5);
     for (const id of P.hand) {
       const t = T(id);
-      let h = 1.2 + (APTITUDE[t.color] ? 1.8 : 0);
+      let h = 1.2 + (E.apt(id) ? 1.8 : 0);
       if (t.annex) h += annexWorth(S, p, id, R) * .45;
       v += h - wages;
+    }
+    for (const o of P.objects || []) v += OBJ_WORTH[o] * Math.min(1, .3 + R / 4);
+    // a revealed event bites at the end of this round if a carnie is still in the inn
+    if (S.ev && S.ev.cur && S.queue.some(t => t.k === 'late') && S.rooms.some(r => r.guest && E.isCarnie(r.guest))) {
+      switch (S.ev.cur) {
+        case 'pickpockets': v -= Math.ceil(P.cash / 2); break;
+        case 'brokensafe': v -= 10 * Math.ceil(P.checks / 2); break;
+        case 'fiasco': v -= P.hand.length * 1.5; break;
+        case 'extortion': v -= Math.max(0, P.hand.length - E.count(P, 'distillery')); break;
+        case 'highseason': v += 3 * S.rooms.filter(r => r.key === p && r.guest).length; break;
+        case 'blackmail': if (!cops) v -= 10 * E.payable(P).length * .5; break;
+        case 'redherring': if (cops) v += 10 * E.payable(P).length * .5; break;
+      }
     }
     return v;
   }
@@ -955,42 +1326,98 @@ const AI = (() => {
 
   // ---------- candidate moves for the turn decision ----------
   function withPay(S, p, m) { const pay = E.suggestPay(S, p, m); return pay ? {...m, pay} : null; }
+  // Variants of a move with each object that fits it, for the evaluation to weigh against keeping the object.
+  function objVariants(S, p, m) {
+    if (!m) return [];
+    const have = S.players[p].objects || [], act = E.actionOf(m), out = [];
+    const discards = m.pay && m.pay.some(id => E.payDest(S, p, act, id) !== 'hand');
+    for (const o of have) {
+      if (OBJECTS[o].when !== act || o === 'wheelbarrow' || m.t === 'peasants') continue;
+      if (['liquor', 'hammer', 'wolftrap', 'bible'].includes(o) && !discards) continue;
+      if (o === 'quicklime' && !m.items.some(it => it.owner !== p)) continue;
+      out.push({...m, objs: [o]});
+    }
+    return out;
+  }
   function candidates(S, p) {
     const P = S.players[p], o = E.options(S, p), out = [{t: 'pass', launder: 0}];
     const reserve = P.hand.length + 3, k = Math.floor((P.cash - reserve) / 10);
     if (k > 0) out.push({t: 'pass', launder: k});
     if (P.checks && P.cash < P.hand.length) out.push({t: 'pass', launder: -1});
-    for (const i of o.bribe) out.push(withPay(S, p, {t: 'bribe', rooms: [i]}));
-    for (const i of o.kill) out.push(withPay(S, p, {t: 'kill', rooms: [i]}));
-    if (o.multiBribe && o.bribe.length > 1) out.push(withPay(S, p, {t: 'bribe', rooms: o.bribe.slice().sort((a, b) => E.rank(S.rooms[b].guest) - E.rank(S.rooms[a].guest)).slice(0, 2)}));
+    const add = m => { if (m) out.push(m, ...objVariants(S, p, m)); };
+    for (const i of o.bribe) add(withPay(S, p, {t: 'bribe', rooms: [i]}));
+    for (const i of o.kill) add(withPay(S, p, {t: 'kill', rooms: [i]}));
+    if (o.multiBribe && o.bribe.length > 1) add(withPay(S, p, {t: 'bribe', rooms: o.bribe.slice().sort((a, b) => E.rank(S.rooms[b].guest) - E.rank(S.rooms[a].guest)).slice(0, 2)}));
     if (o.multiKill && o.kill.length > 1) {
       const cheap = o.kill.slice().sort((a, b) => E.rank(S.rooms[a].guest) - E.rank(S.rooms[b].guest));
-      out.push(withPay(S, p, {t: 'kill', rooms: cheap.slice(0, 2)}), withPay(S, p, {t: 'kill', rooms: cheap.slice(0, 3)}));
+      add(withPay(S, p, {t: 'kill', rooms: cheap.slice(0, 2)})); add(withPay(S, p, {t: 'kill', rooms: cheap.slice(0, 3)}));
     }
     for (let n = 1; n <= o.peasants; n++) out.push({t: 'peasants', n, pay: []});
-    if (o.killPeasant) out.push({t: 'killPeasant', pay: []});
-    for (const id of o.build) out.push(withPay(S, p, {t: 'build', card: id}));
+    if (o.killPeasant) add({t: 'killPeasant', pay: []});
+    for (const id of o.build) add(withPay(S, p, {t: 'build', card: id}));
+    for (const i of o.wheel) add(withPay(S, p, {t: 'build', room: i, objs: ['wheelbarrow']}));
     for (const id of o.bury) {
-      const targets = E.annexTargets(S);
+      const targets = E.annexTargets(S, [], id, p);
       const own = targets.filter(a => a.p === p), other = targets.filter(a => a.p !== p).slice(0, 3);
-      for (const a of [...own, ...other]) out.push(withPay(S, p, {t: 'bury', items: [{id, owner: a.p, annex: a.i}]}));
+      for (const a of [...own, ...other]) add(withPay(S, p, {t: 'bury', items: [{id, owner: a.p, annex: a.i}]}));
     }
     if (o.multiBury && P.corpses.length > 1) {
-      const items = [], used = [];
+      const items = [];
       for (const id of P.corpses) {
-        const a = E.annexTargets(S, used).find(x => x.p === p) || E.annexTargets(S, used)[0];
-        if (!a) break;
-        const it = {id, owner: a.p, annex: a.i}; items.push(it); used.push(it);
+        const ts = E.annexTargets(S, items, id, p), a = ts.find(x => x.p === p) || ts[0];
+        if (!a) continue;
+        items.push({id, owner: a.p, annex: a.i});
       }
-      if (items.length > 1) out.push(withPay(S, p, {t: 'bury', items}));
+      if (items.length > 1) add(withPay(S, p, {t: 'bury', items}));
     }
     return out.filter(m => m && !E.check(S, m));
   }
 
   // ---------- small decisions ----------
+  function objectPlay(S, p, when) {
+    const opts = E.objOptions(S, p, when), P = S.players[p], R = roundsLeft(S);
+    const others = S.players.map((_, q) => q).filter(q => q !== p);
+    const leader = others.slice().sort((a, b) => E.wealth(S.players[b]) - E.wealth(S.players[a]))[0];
+    const cops = S.rooms.some(r => r.guest && E.isPolice(r.guest));
+    const last = S.final || R < 1.2;
+    const freeSlots = P.annexes.reduce((n, a) => n + Math.max(0, E.annexFree(a)), 0) - P.corpses.length;
+    let best = null, bs = 0;
+    for (const o of opts) {
+      let s = -1e9;
+      const g = o.room != null ? S.rooms[o.room].guest : null;
+      switch (o.id) {
+        case 'coffee': s = E.rank(g) * 1.5 + (S.rooms[o.room].key === p ? .5 : 0) - (last ? 0 : 2.5); break;
+        case 'cake': s = 2 * E.rank(g) * (S.rooms[o.room].coffee === p ? 1 : .45) - (last ? 0 : 2.5); break;
+        case 'poison': {
+          const to = typeof S.rooms[o.room].key === 'number' ? S.rooms[o.room].key : p;
+          if (to === p) s = freeSlots > 0 && !cops ? T(g).money * .45 - E.brank(g) - 2 : -1e9;
+          else s = cops && !E.isPolice(g) ? 8 + T(g).money * .05 : -1e9;
+          break;
+        }
+        case 'rug': s = o.to === leader && (cops || freeSlots < 0) ? 9 : -1e9; break;
+        case 'letter': {
+          const theirs = others.reduce((n, q) => n + E.payable(S.players[q]).length, 0);
+          s = !E.payable(P).length && theirs >= 2 ? 3 * theirs : -1e9;
+          break;
+        }
+        case 'snowpile': s = 10; break;
+        case 'tomb': s = T(o.corpse).money / 2 + (o.owner === p ? 10 : 0) - (o.owner === p ? 0 : 3); break;
+        case 'confessional': s = R < 3 || S.final ? 6 : -1e9; break;
+      }
+      if (s > bs) { bs = s; best = o; }
+    }
+    return {t: 'obj', play: best};
+  }
+
   function minor(S) {
     const pd = S.pending, p = pd.p, P = S.players[p];
     switch (pd.t) {
+      case 'draft': {
+        const best = pd.opts.slice().sort((a, b) => (OBJ_WORTH[b] - 1.1 * OBJECTS[b].cost) - (OBJ_WORTH[a] - 1.1 * OBJECTS[a].cost) || (a < b ? -1 : 1))[0];
+        return {t: 'draft', id: best};
+      }
+      case 'objects': return objectPlay(S, p, pd.when);
+      case 'study': return {t: 'study', yes: P.cash >= 18};
       case 'lodge': {
         const id = pd.card, r = E.rank(id);
         let best = -1, bs = -1e9;
@@ -1004,7 +1431,7 @@ const AI = (() => {
         return {t: 'lodge', room: best};
       }
       case 'rs': {
-        const doors = S.rooms.map((R, i) => R.key !== null && R.rs === null ? i : -1).filter(i => i >= 0);
+        const doors = S.rooms.map((R, i) => R.key !== null && R.rs === null && !E.isTrailer(R) ? i : -1).filter(i => i >= 0);
         return {t: 'rs', room: doors.find(i => S.rooms[i].key === p) ?? doors[0]};
       }
       case 'monk': {
@@ -1039,8 +1466,9 @@ const AI = (() => {
     return best;
   }
 
-  function determinize(S, seed) {
-    // hide what the AI cannot know: the entrance below its face-up top card, mixed with the cards removed at setup
+  function determinize(S, seed, p) {
+    // hide what the AI cannot know: the entrance below its face-up top card mixed with the cards removed at setup,
+    // the order of the event deck, and the other innkeepers' secret objects
     const X = clone(S);
     X.rng = seed >>> 0;
     if (X.entrance.length > 1) {
@@ -1048,6 +1476,8 @@ const AI = (() => {
       X.entrance = [X.entrance[0], ...pool.slice(0, X.entrance.length - 1)];
       X.removed = pool.slice(X.entrance.length - 1);
     }
+    if (X.ev) E.shuffle(X, X.ev.deck);
+    X.players.forEach((P, q) => { if (q !== p) P.objects = []; });
     return X;
   }
   function playout(X, p, start) {
@@ -1065,7 +1495,7 @@ const AI = (() => {
     for (const [m, s0] of ranked) {
       let tot = 0;
       for (let k = 0; k < 2; k++) {
-        const X = determinize(S, S.seed * 31 + S.turnNo * 7 + k);
+        const X = determinize(S, S.seed * 31 + S.turnNo * 7 + k, p);
         E.apply(X, m); settle(X, p);
         tot += playout(X, p, S.round);
       }
@@ -1088,18 +1518,19 @@ const AI = (() => {
     return level === 'hard' ? hard(S) : level === 'easy' ? easy(S) : normal(S);
   }
 
-  // Non-invasive hint about a rival's likely plan: what the Normal AI would do in its place right now.
+  // Non-invasive hint about a rival's likely plan: only what is visible on the table (never their objects).
   function intel(S, q) {
     const P = S.players[q], notes = [];
     const cops = S.rooms.some(r => r.guest && E.isPolice(r.guest));
     if (P.corpses.length) notes.push(`${P.corpses.length} unburied corpse${P.corpses.length === 1 ? '' : 's'}${cops ? ' and the police are in the inn' : ''}`);
     const free = P.annexes.reduce((n, a) => n + Math.max(0, E.annexFree(a)), 0);
     if (free) notes.push(`${free} free burial slot${free === 1 ? '' : 's'}`);
-    const kill = P.hand.filter(id => E.color(id) === 'grey').length, bury = P.hand.filter(id => E.color(id) === 'purple').length;
-    if (kill) notes.push(`${kill} police accomplice${kill === 1 ? '' : 's'} (cheap kills)`);
-    if (bury) notes.push(`${bury} religious accomplice${bury === 1 ? '' : 's'} (cheap burials)`);
+    const kill = P.hand.filter(id => E.apt(id) === 'kill').length, bury = P.hand.filter(id => E.apt(id) === 'bury').length;
+    if (kill) notes.push(`${kill} killer accomplice${kill === 1 ? '' : 's'} (cheap kills)`);
+    if (bury) notes.push(`${bury} burying accomplice${bury === 1 ? '' : 's'} (cheap burials)`);
     const ends = P.annexes.filter(a => a.id !== 'barn' && END_COL[T(a.id).effect]).map(a => T(a.id).annex);
     if (ends.length) notes.push(`scores at the end with ${ends.join(', ')}`);
+    if ((P.objects || []).length) notes.push(`${P.objects.length} secret object${P.objects.length === 1 ? '' : 's'} left`);
     return notes;
   }
 
@@ -1380,6 +1811,252 @@ const Tests = (() => {
     return true;
   });
 
+  // ---------- The Carnies expansion ----------
+  const ALL = {notables: true, carnies: true, events: true, objects: true};
+  const exp = (n = 2, mods = ALL) => {
+    const S = fresh(n, {mods});
+    S.players.forEach(P => { P.objects = []; P.cash = 5; });
+    if (S.ev) { S.ev.cur = null; S.ev.live = false; }
+    S.draft = null;
+    return S;
+  };
+  const run1 = (S, ...ks) => { S.pending = null; S.queue = ks.map(k => typeof k === 'string' ? {k} : k); E.advance(S); };
+  const evOn = (S, id) => { S.ev.cur = id; S.ev.live = true; };
+
+  t('Modules: Notables replace the 14 nobles; Carnies add 14 orange travelers; ranks read from the cards', () => {
+    const d = deckFor({notables: true}), c = deckFor({carnies: true});
+    if (d.length !== 70 || d.some(id => NOBLE_IDS.includes(id)) || d.filter(id => T(id).color === 'green').length !== 14) return 'notables';
+    if (c.length !== 84 || CARNIE_IDS.length !== 14 || !CARNIE_IDS.every(id => T(id).color === 'orange')) return 'carnies';
+    const r = id => `${T(id).rank}/${T(id).brank}/${T(id).money}`;
+    const want = {winemaker1: '2/0/14', sericulturist1: '0/1/10', surgeon1: '1/2/16', notary1: '3/1/20', pharmacist1: '1/3/20', banker1: '1/3/20',
+      actress1: '1/0/10', conartist1: '0/2/14', dwarf1: '2/1/16', beartamer1: '3/1/20', twins1: '2/1/24', beardedlady1: '2/1/24', barker1: '1/3/20', companion1: '3/1/20'};
+    for (const [id, v] of Object.entries(want)) if (r(id) !== v) return `${id} ${r(id)}`;
+    const S = E.newGame({seed: 3, seats: seatsN(3), mods: {carnies: true}});
+    return S.removed.length === REMOVE[3].long || 'removal table';
+  });
+  t('Two ranks: top rank to bribe or kill, bottom rank to build, bury and for annex capacity', () => {
+    const S = exp(); const P = S.players[0];
+    put(S, 0, 'winemaker1'); put(S, 1, 'pharmacist1');
+    if (E.cost(S, 0, {t: 'bribe', rooms: [0]}) !== 2 || E.cost(S, 0, {t: 'kill', rooms: [1]}) !== 1) return 'top';
+    if (E.cost(S, 0, {t: 'bury', items: [{id: 'winemaker2'}]}) !== 0 || E.cost(S, 0, {t: 'build', card: 'pharmacist1'}) !== 3) return 'bottom';
+    build(S, 0, 'winemaker3'); build(S, 0, 'pharmacist1');
+    return (E.annexFree(P.annexes[1]) === 0 && E.annexFree(P.annexes[2]) === 3) || 'capacity';
+  });
+  t('Carnies with an aptitude: Actress (bribe), Strongman (build), Fortune Teller (bury), Knife Thrower (kill)', () =>
+    E.apt('actress1') === 'bribe' && E.apt('strongman1') === 'build' && E.apt('fortuneteller1') === 'bury' && E.apt('knifethrower1') === 'kill' && !E.apt('juggler1'));
+  t('Trailer: needs a free Key, joins the inn, must be filled at welcome, earns 1F; no Room Service there', () => {
+    const S = exp(2, {carnies: true}); const P = S.players[0];
+    P.hand = ['juggler1', 'peasant1', 'mechanic1'];
+    E.apply(S, {t: 'build', card: 'juggler1', pay: ['peasant1', 'mechanic1']});
+    const ti = S.rooms.length - 1;
+    if (S.rooms.length !== 9 || S.rooms[ti].key !== 0 || !P.annexes[1].inn) return 'joined';
+    S.rooms.forEach((R, i) => { if (i < 8 && R.key !== null) R.guest = 'baron1'; });
+    S.entrance = ['count1', 'count2']; S.opts.fcfs = true;
+    run1(S, 'welcome');
+    if (S.rooms[ti].guest !== 'count1') return 'filled';
+    P.cash = 0; run1(S, 'leave');
+    if (P.cash !== 2) return 'leave ' + P.cash;                       // own room + trailer
+    const X = exp(2, {carnies: true}); X.rooms.push({key: 0, rs: null, guest: null, trailer: 99});
+    X.players[0].keys = 0;
+    for (let i = 0; i < 6; i++) X.rooms.push({key: 0, rs: null, guest: null, trailer: 100 + i});
+    X.players[0].hand = ['illusionist1', 'strongman1', 'mechanic1'];
+    return !!E.check(X, {t: 'build', card: 'illusionist1', pay: ['strongman1', 'mechanic1']}) || 'eighth key allowed';
+  });
+  t('Trailer burial: only when unoccupied; the trailer leaves the inn for its owner\u2019s area', () => {
+    const S = exp(2, {carnies: true}); const P = S.players[0];
+    P.hand = ['fireeater1', 'strongman1', 'mechanic1'];
+    E.apply(S, {t: 'build', card: 'fireeater1', pay: ['strongman1', 'mechanic1']});
+    const ti = S.rooms.length - 1; S.rooms[ti].guest = 'baron1';
+    turn(S); P.corpses = ['count1']; P.hand = ['peasant1', 'peasant5'];
+    if (!E.check(S, {t: 'bury', items: [{id: 'count1', owner: 0, annex: 1}], pay: ['peasant1', 'peasant5']})) return 'occupied accepted';
+    S.rooms[ti].guest = null;
+    E.apply(S, {t: 'bury', items: [{id: 'count1', owner: 0, annex: 1}], pay: ['peasant1', 'peasant5']});
+    return (S.rooms.length === 8 && !P.annexes[1].inn && E.annexFree(P.annexes[1]) === 1) || 'moved';
+  });
+  t('Dwarf goes under any annex, even a full one; Twins need 2 places and count 2; the Bearded Lady goes to a rival', () => {
+    const S = exp(2, {carnies: true}); const P = S.players[0];
+    P.annexes[0].under = ['baron1']; P.corpses = ['dwarf1', 'twins1', 'beardedlady1']; P.hand = ['peasant1', 'peasant5', 'fortuneteller1'];
+    E.apply(S, {t: 'bury', items: [{id: 'dwarf1', owner: 0, annex: 0}], pay: ['fortuneteller1']});
+    if (P.annexes[0].under.length !== 2 || E.annexFree(P.annexes[0]) !== 0) return 'dwarf';
+    turn(S); build(S, 1, 'barker1');
+    if (!E.check(S, {t: 'bury', items: [{id: 'twins1', owner: 1, annex: 0}], pay: ['fortuneteller1']})) return 'twins in barn';
+    E.apply(S, {t: 'bury', items: [{id: 'twins1', owner: 1, annex: 1}], pay: ['fortuneteller1']});
+    if (S.players[1].annexes[1].under.length !== 2 || E.annexFree(S.players[1].annexes[1]) !== 1 || E.buriedUnder(S.players[1]) !== 2) return 'twins';
+    turn(S); build(S, 0, 'conartist1');
+    if (!E.check(S, {t: 'bury', items: [{id: 'beardedlady1', owner: 0, annex: 1}], pay: ['fortuneteller1']}).includes('another')) return 'lady own';
+    return !E.check(S, {t: 'bury', items: [{id: 'beardedlady1', owner: 1, annex: 1}], pay: ['fortuneteller1']}) || 'lady rival';
+  });
+  t('Bear Cage: kill for 1 fewer; Carnival Booth: 3F per bribed carnie; Nook: bribe payers all return', () => {
+    const S = exp(2, {carnies: true}); const P = S.players[0];
+    build(S, 0, 'beartamer1'); build(S, 0, 'barker1'); build(S, 0, 'companion1');
+    put(S, 0, 'juggler1'); put(S, 1, 'count1');
+    if (E.cost(S, 0, {t: 'kill', rooms: [1]}) !== 1) return 'bear cage';
+    P.hand = ['peasant1', 'baron1']; P.cash = 0;
+    E.apply(S, {t: 'bribe', rooms: [1], pay: ['peasant1', 'baron1']});
+    if (P.hand.length !== 3 || S.bistro.length) return 'nook';
+    turn(S); E.apply(S, {t: 'bribe', rooms: [0], pay: []});
+    return P.cash === 3 || 'booth ' + P.cash;
+  });
+  t('Wine Cask 3F per occupied neutral room; Silk Farm 3F per occupied room of your colour, trailers excluded', () => {
+    const S = exp(2, {notables: true, carnies: true}); const P = S.players[0];
+    put(S, 0, 'baron1'); put(S, 2, 'baron2'); put(S, 3, 'baron3');
+    S.rooms.push({key: 0, rs: null, guest: 'baron4', trailer: 77});
+    P.hand = ['winemaker1', 'sericulturist1', 'peasant1']; P.cash = 0;
+    E.apply(S, {t: 'build', card: 'winemaker1', pay: []});
+    if (P.cash !== 6) return 'wine ' + P.cash;
+    turn(S); E.apply(S, {t: 'build', card: 'sericulturist1', pay: ['peasant1']});
+    return P.cash === 9 || 'silk ' + P.cash;
+  });
+  t('Laboratory +3F if a rival has an unburied corpse; Pharmacy +2F if a rival has 3 accomplices', () => {
+    const S = exp(2, {notables: true}); const P = S.players[0], Q = S.players[1];
+    build(S, 0, 'surgeon1'); build(S, 0, 'pharmacist1'); P.cash = 0;
+    Q.corpses = ['baron1']; Q.hand = ['peasant2', 'peasant6', 'count1'];
+    run1(S, 'leave', 'late');
+    if (P.cash !== 5) return 'both ' + P.cash;
+    P.corpses = ['baron2']; Q.corpses = []; Q.hand = ['peasant2']; P.cash = 0;
+    run1(S, 'leave', 'late');
+    return P.cash === 0 || 'own corpse counted ' + P.cash;
+  });
+  t('Study: when a rival launders, the owner may buy one check; Safe: the owner collects a rival\u2019s excess over 40F', () => {
+    const S = exp(3, {notables: true}); const P = S.players[0];
+    build(S, 1, 'notary1'); S.players[1].cash = 15; P.cash = 20;
+    E.apply(S, {t: 'pass', launder: 1});
+    if (!S.pending || S.pending.t !== 'study' || S.pending.p !== 1) return 'offer';
+    E.apply(S, {t: 'study', yes: true});
+    if (S.players[1].cash !== 5 || S.players[1].checks !== 2) return 'bought';
+    const X = exp(3, {notables: true}); build(X, 2, 'banker1'); X.players[2].cash = 0;
+    X.players[0].cash = 36; X.players[0].corpses = ['count1'];
+    turn(X); E.apply(X, {t: 'bury', items: [{id: 'count1', owner: 0, annex: 0}], pay: E.suggestPay(X, 0, {t: 'bury', items: [{id: 'count1'}]})});
+    return (X.players[0].cash === 40 && X.players[2].cash === 14) || `safe ${X.players[2].cash}`;
+  });
+  t('Events: revealed with the first carnie of the round; discarded unresolved if no carnie stays', () => {
+    const S = exp(2, {carnies: true, events: true});
+    S.entrance = ['baron1', 'juggler1', 'actress1', 'count1', 'count2']; S.opts.fcfs = true;
+    run1(S, 'welcome');
+    if (!S.ev.cur || S.ev.deck.length !== 7) return 'reveal once';
+    evOn(S, 'pickpockets'); S.ev.live = false;
+    S.rooms.forEach(R => { if (R.guest && E.isCarnie(R.guest)) R.guest = null; });
+    S.players[0].cash = 20;
+    run1(S, 'phase3', 'late', 'roundEnd');
+    return (S.players[0].cash === 20 && S.ev.discard.includes('pickpockets') && !S.ev.cur) || 'discarded';
+  });
+  t('Events: Red Herring stops the police, Blackmail calls the gravedigger without them', () => {
+    const S = exp(2, {carnies: true, events: true}); const P = S.players[0];
+    put(S, 0, 'major1'); put(S, 1, 'juggler1'); P.corpses = ['baron1']; P.cash = 30; P.checks = 0;
+    S.ev.cur = 'redherring'; run1(S, 'phase3', 'police');
+    if (P.cash !== 30) return 'herring';
+    S.rooms[0].guest = null; S.ev.cur = 'blackmail'; run1(S, 'phase3', 'police');
+    return P.cash === 20 || 'blackmail ' + P.cash;
+  });
+  t('Events: High Season 4F per room, Broken Safe and Pickpockets take half (rounded up), Fiasco empties hands', () => {
+    const S = exp(2, {carnies: true, events: true}); const P = S.players[0];
+    put(S, 0, 'juggler1'); P.cash = 0;
+    evOn(S, 'highseason'); run1(S, 'leave');
+    if (P.cash !== 4) return 'high season ' + P.cash;
+    P.checks = 3; evOn(S, 'brokensafe'); run1(S, 'late');
+    if (P.checks !== 1) return 'broken safe';
+    P.cash = 7; evOn(S, 'pickpockets'); run1(S, 'late');
+    if (P.cash !== 3) return 'pickpockets ' + P.cash;
+    P.hand = ['peasant1', 'count1']; evOn(S, 'fiasco'); run1(S, 'late');
+    return (!P.hand.length && S.bistro.includes('peasant1') && S.exit.includes('count1')) || 'fiasco';
+  });
+  t('Events: Extortion doubles wages (Distillery still frees one); Cirrhosis removes a bistro peasant', () => {
+    const S = exp(2, {carnies: true, events: true}); const P = S.players[0];
+    P.hand = ['peasant1', 'peasant5', 'count1']; P.cash = 10; build(S, 0, 'distiller1');
+    evOn(S, 'extortion'); run1(S, {k: 'wages', p: 0});
+    if (P.cash !== 6) return 'extortion ' + P.cash;
+    S.bistro = ['peasant3', 'peasant4']; evOn(S, 'cirrhosis'); run1(S, 'afterWages');
+    return (S.bistro.length === 1 && S.box.includes('peasant4')) || 'cirrhosis';
+  });
+  t('Objects: draft 4-3-2, keep 3 secret, start with 10F minus their cost', () => {
+    const S = E.newGame({seed: 9, seats: seatsN(3), mods: {objects: true}});
+    let g = 0;
+    while (S.pending && S.pending.t === 'draft' && g++ < 20) {
+      const k = S.pending.opts.length;
+      if (k !== 4 - S.pending.step) return 'hand size ' + k;
+      E.apply(S, AI.minor(S));
+    }
+    if (!S.players.every(P => P.objects.length === 3)) return 'three each';
+    const all = S.players.flatMap(P => P.objects);
+    if (new Set(all).size !== 9) return 'duplicates';
+    return S.players.every(P => P.cash === 10 - P.objects.reduce((n, o) => n + OBJECTS[o].cost, 0)) || 'cash';
+  });
+  t('Objects: Liquor, Hammer, Wolf Trap and Bible keep every payer; each object is used once', () => {
+    const S = exp(); const P = S.players[0];
+    P.objects = ['liquor', 'wolftrap']; put(S, 0, 'count1'); put(S, 1, 'count2'); P.hand = ['peasant1', 'baron1'];
+    E.apply(S, {t: 'bribe', rooms: [0], pay: ['peasant1', 'baron1'], objs: ['liquor']});
+    if (P.hand.length !== 3 || P.objects.join() !== 'wolftrap') return 'liquor';
+    turn(S); E.apply(S, {t: 'kill', rooms: [1], pay: ['peasant1', 'baron1'], objs: ['wolftrap']});
+    if (P.hand.length !== 3 || P.objects.length) return 'wolf trap';
+    turn(S);
+    return !!E.check(S, {t: 'bribe', rooms: [0], pay: [], objs: ['liquor']}) || 'reused';
+  });
+  t('Objects: Wheelbarrow builds from a room; Well banks half the money; Gold Teeth +2x rank; Quicklime takes all', () => {
+    const S = exp(); const P = S.players[0], Q = S.players[1];
+    P.objects = ['wheelbarrow', 'well', 'goldteeth', 'quicklime']; put(S, 0, 'count1'); put(S, 1, 'viscount1'); P.hand = ['peasant1', 'peasant5', 'baron1']; P.cash = 0;
+    E.apply(S, {t: 'build', room: 0, pay: ['peasant1', 'peasant5'], objs: ['wheelbarrow']});
+    if (S.rooms[0].guest || !P.annexes.some(a => a.id === 'count1') || P.cash !== 9) return 'wheelbarrow ' + P.cash;
+    turn(S); P.cash = 0; E.apply(S, {t: 'kill', rooms: [1], pay: ['baron1'], objs: ['well']});
+    if (P.cash !== 6 || P.corpses.length || !S.box.includes('viscount1')) return 'well ' + P.cash;
+    turn(S); P.cash = 0; P.corpses = ['count2']; P.hand = ['novice1', 'novice2'];
+    E.apply(S, {t: 'bury', items: [{id: 'count2', owner: 0, annex: 1}], pay: ['novice1', 'novice2'], objs: ['goldteeth']});
+    if (P.cash !== 22) return 'gold teeth ' + P.cash;
+    turn(S); P.cash = 0; Q.cash = 0; P.corpses = ['baron2'];
+    E.apply(S, {t: 'bury', items: [{id: 'baron2', owner: 1, annex: 0}], pay: [], objs: ['quicklime']});
+    return (P.cash === 8 && Q.cash === 0) || `quicklime ${P.cash}/${Q.cash}`;
+  });
+  t('Objects after welcoming: Coffee pays the rank and protects; Cake pays 2x rank if still there; Poison gives the room owner a corpse', () => {
+    const S = exp(); const P = S.players[0], Q = S.players[1];
+    P.objects = ['coffee', 'cake', 'poison']; put(S, 0, 'count1'); put(S, 1, 'baron1'); put(S, 2, 'viscount1'); P.cash = 0;
+    run1(S, {k: 'window', when: 'welcome'});
+    if (!S.pending || S.pending.t !== 'objects' || S.pending.p !== 0) return 'window';
+    E.apply(S, {t: 'obj', play: {id: 'coffee', room: 0}});
+    if (P.cash !== 2) return 'coffee';
+    E.apply(S, {t: 'obj', play: {id: 'cake', room: 0}});
+    E.apply(S, {t: 'obj', play: {id: 'poison', room: 1}});
+    if (!Q.corpses.includes('baron1') || S.rooms[1].guest) return 'poison';
+    if (S.pending) return 'window should close with no object left';
+    turn(S);
+    if (!E.check(S, {t: 'bribe', rooms: [0], pay: ['peasant1', 'peasant5']}).includes('coffee')) return 'protected';
+    run1(S, 'leave');
+    return P.cash === 7 || 'cake ' + P.cash;                          // 2 coffee + 1 own room + 4 cake
+  });
+  t('Objects: Rug hands a corpse over; Letter calls the gravedigger without police; Snow Pile hides a corpse until travelers leave', () => {
+    const S = exp(); const P = S.players[0], Q = S.players[1];
+    P.objects = ['rug', 'letter']; P.corpses = ['baron1', 'baron2']; Q.cash = 30; P.cash = 30; P.checks = Q.checks = 0;
+    run1(S, {k: 'window', when: 'welcome'});
+    E.apply(S, {t: 'obj', play: {id: 'rug', corpse: 'baron1', to: 1}});
+    E.apply(S, {t: 'obj', play: {id: 'letter'}});
+    Q.objects = ['snowpile']; Q.corpses.push('count1');
+    run1(S, 'police');
+    if (!S.pending || S.pending.t !== 'objects' || S.pending.p !== 1) return 'snow window';
+    E.apply(S, {t: 'obj', play: {id: 'snowpile', corpse: 'count1'}});
+    if (P.cash !== 20 || Q.cash !== 20 || Q.corpses.join() !== 'count1') return `paid ${P.cash}/${Q.cash}`;
+    run1(S, 'leave');
+    return (Q.snow === null && Q.corpses.length === 1) || 'melted';
+  });
+  t('Objects: Tomb takes a paying player\u2019s corpse for half its money; Confessional takes 6F from the top burier', () => {
+    const S = exp(); const P = S.players[0], Q = S.players[1];
+    put(S, 0, 'major1'); P.objects = ['tomb']; Q.corpses = ['count1', 'baron1']; Q.cash = 30; P.cash = 0; Q.checks = 0;
+    run1(S, 'police');
+    E.apply(S, {t: 'obj', play: {id: 'tomb', owner: 1, corpse: 'count1'}});
+    if (P.cash !== 9 || Q.cash !== 20) return `tomb ${P.cash}/${Q.cash}`;
+    const X = exp(3); X.players[1].annexes[0].under = ['baron1']; X.players[2].annexes[0].under = ['baron2'];
+    X.players[0].objects = ['confessional']; X.players[0].cash = 0; X.players[1].cash = 10; X.players[2].cash = 2;
+    run1(X, {k: 'window', when: 'end'});
+    E.apply(X, {t: 'obj', play: {id: 'confessional'}});
+    return (X.players[0].cash === 5 && X.players[1].cash === 7 && X.players[2].cash === 0) || `confessional ${X.players[0].cash}`;
+  });
+  t('Every AI level finishes a game with all modules, using only legal moves', () => {
+    for (const level of ['easy', 'normal', 'hard']) for (const n of [1, 3]) {
+      const S = E.newGame({seed: 6 + n, long: false, seats: seatsN(n).map(s => ({...s, type: 'ai', level})), mods: ALL});
+      let g = 0;
+      while (!S.over && g++ < 3000) E.apply(S, AI.decide(S));
+      if (!S.over) return `${level} ${n}p did not finish`;
+    }
+    return true;
+  });
+
   function run() {
     const res = [];
     for (const {name, fn} of list) {
@@ -1404,13 +2081,24 @@ const store = {
   set(k, v) { try { localStorage.setItem(KEY + k, JSON.stringify(v)); } catch {} },
   del(k) { try { localStorage.removeItem(KEY + k); } catch {} },
 };
-const ICON = {bribe: '\u{1F4B6}', build: '\u{1F528}', kill: '\u{1F52B}', bury: '\u26B0\uFE0F', pass: '\u{1F4A4}', police: '\u{1F46E}', check: '\u{1F9FE}', cash: '\u{1F4B0}', bistro: '\u{1F37A}', key: '\u{1F5DD}\uFE0F', rs: '\u{1F37D}\uFE0F'};
-const COL_HEX = {blue: '#2f5f9e', red: '#a8322b', purple: '#6c3a8c', green: '#3a7347', grey: '#6b6b6b', yellow: '#c9971c'};
+const ICON = {bribe: '\u{1F4B6}', build: '\u{1F528}', kill: '\u{1F52B}', bury: '\u26B0\uFE0F', pass: '\u{1F4A4}', police: '\u{1F46E}', check: '\u{1F9FE}', cash: '\u{1F4B0}', bistro: '\u{1F37A}', key: '\u{1F5DD}\uFE0F', rs: '\u{1F37D}\uFE0F',
+  event: '\u{1F3AA}', obj: '\u{1F9F0}', trailer: '\u{1F6FB}', coffee: '\u2615', cake: '\u{1F370}', snow: '\u2744\uFE0F'};
+const COL_HEX = {blue: '#2f5f9e', red: '#a8322b', purple: '#6c3a8c', green: '#3a7347', grey: '#6b6b6b', orange: '#c4651c', yellow: '#c9971c'};
+const EXIT_COLS = ['blue', 'red', 'purple', 'green', 'grey', 'orange'];
+const OBJ_WHEN = {bribe: 'With a Bribe action', build: 'With a Build action', kill: 'With a Kill action', bury: 'With a Bury action', welcome: 'After the welcome', police: 'When the gravedigger is called', end: 'At the end of a round'};
+const OBJ_SHORT = {goldteeth: 'Bury: +2F per bottom rank', wheelbarrow: 'Build the annex of a traveler in a room', hammer: 'Build: every payer returns', tomb: 'Take a paying player\u2019s corpse: half its money',
+  coffee: 'On a guest: earn his rank, he is safe this round', wolftrap: 'Kill: every payer returns', cake: 'On a guest: 2x his rank if he stays', bible: 'Bury: every payer returns',
+  confessional: '6F from the top burier', rug: 'Give a corpse to a rival', poison: 'Kill a guest: the room owner gets the corpse', snowpile: 'Hide one corpse from the gravedigger',
+  letter: 'Everyone with a corpse pays the gravedigger', liquor: 'Bribe: every payer returns', well: 'Kill: bank half the money, no corpse', quicklime: 'Bury with a rival: keep all the money'};
+const SPECIAL_SHORT = {dwarf: 'Buried sideways: fits under any annex, even a full one.', twins: 'Need an annex with 2 free places; count as 2 corpses.', lady: 'Must be buried under another player\u2019s annex.'};
 const SHORT = {kiosk: '+1F per blue annex', parlor: 'Bribe: 1 accomplice fewer', roomservice: 'Token on a door: guests there pay you their rank', grocery: '+4F. End: 4F per blue card in the Exit Stack',
   store: 'Bribe any number of travelers at once', brewery: 'Bribe up to 4 peasants', vegetable: '+1F per red annex', workshop: 'Build: 1 accomplice fewer', distillery: 'Wages: one accomplice is free',
   park: '+4F. End: 4F per red card in the Exit Stack', gardens: '+2F every round', butcher: 'Kill any number of travelers at once', altar: '+1F per purple annex', room: 'Claim a white-key room',
   cellar: 'Bury: 1 accomplice fewer', chapel: 'Bury: every payer returns to hand', bishopric: '+4F. End: 4F per purple card in the Exit Stack', crypt: 'Bury any number of corpses at once',
-  chandelier: '+4F', bed: '+6F', dining: '+9F', stables: '+4F. End: 4F per green card in the Exit Stack', detached: '+18F', greenhouse: 'End: 3F per check'};
+  chandelier: '+4F', bed: '+6F', dining: '+9F', stables: '+4F. End: 4F per green card in the Exit Stack', detached: '+18F', greenhouse: 'End: 3F per check',
+  trailer: 'An extra room for you beside the inn', bearcage: 'Kill: 1 accomplice fewer', booth: '+3F per carnie you bribe', nook: 'Bribe: every payer returns to hand',
+  winecask: '+3F per occupied neutral room', silkfarm: '+3F per occupied room of yours', laboratory: '+3F a round if a rival has a corpse', study: 'When a rival buys checks, buy one too',
+  pharmacy: '+2F a round if a rival has 3+ accomplices', safe: 'Collect rivals\u2019 cash over 40F'};
 const MENU_ICON = '<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M12 2c3 4 6 7 6 11a6 6 0 0 1-12 0c0-4 3-7 6-11z" fill="#b3161b" stroke="#2a0b0b" stroke-width="1.2"/><path d="M9.5 14a2.5 2.5 0 0 0 2.5 2.5" stroke="#ffb4a8" stroke-width="1.4" fill="none" stroke-linecap="round"/></svg>';
 
 const UI = {
@@ -1519,7 +2207,7 @@ function wrap(text, n) {
 const coinSVG = (x, y, n, r = 9) => `<circle cx="${x}" cy="${y}" r="${r}" fill="#e6b93c" stroke="#5c430f" stroke-width="1.4"/><text x="${x}" y="${y + r * .4}" font-size="${r * 1.05}" text-anchor="middle" font-weight="700" fill="#2b1d05">${n}</text>`;
 const housePath = (x, y, s, fill) => `<path transform="translate(${x},${y}) scale(${s})" d="M0 8 L10 0 L20 8 L20 22 L0 22 Z" fill="${fill}" stroke="#1d150c" stroke-width="1.2"/>`;
 function aliveSVG(t) {
-  const c = COL_HEX[t.color], apt = APTITUDE[t.color], nm = t.name.toUpperCase();
+  const c = COL_HEX[t.color], apt = t.apt || APTITUDE[t.color], nm = t.name.toUpperCase(), sp = SPECIAL_BURIAL[t.id];
   let s = `<rect width="100" height="140" rx="7" fill="#17110d"/><rect x="4" y="4" width="92" height="132" rx="5" fill="${c}"/>
     <rect x="4" y="4" width="92" height="74" rx="5" fill="url(#gsh)" opacity=".55"/>
     <rect x="4" y="4" width="92" height="17" rx="5" fill="#efe3c4"/>
@@ -1530,9 +2218,12 @@ function aliveSVG(t) {
   s += coinSVG(83, 70, t.money, 9.5);
   s += `<rect x="4" y="82" width="92" height="54" rx="4" fill="#efe3c4"/>`;
   if (t.annex) {
-    s += housePath(7, 86, .82, c) + `<text x="15.2" y="102.5" font-size="8" text-anchor="middle" font-weight="800" fill="#fff">${t.rank}</text>`;
+    s += housePath(7, 86, .82, c) + `<text x="15.2" y="102.5" font-size="8" text-anchor="middle" font-weight="800" fill="#fff">${t.brank}</text>`;
     s += `<text x="29" y="93" font-size="${t.annex.length > 13 ? 6.3 : 7.2}" font-weight="800" fill="#2a1d12" class="cfont">${esc(t.annex.toUpperCase())}</text>`;
     wrap(SHORT[t.effect] || '', 22).slice(0, 4).forEach((l, i) => { s += `<text x="${i < 1 ? 29 : 8}" y="${103 + i * 8}" font-size="6.4" fill="#3b2a1a">${esc(l)}</text>`; });
+  } else if (t.color === 'orange') {
+    s += housePath(7, 86, .82, '#8a7a66') + `<text x="15.2" y="102.5" font-size="8" text-anchor="middle" font-weight="800" fill="#fff">${t.brank}</text><text x="29" y="94" font-size="7.2" font-weight="800" fill="#2a1d12" class="cfont">CARNIE</text>`;
+    wrap(sp ? SPECIAL_SHORT[sp] : 'No annex.', 22).slice(0, 4).forEach((l, i) => { s += `<text x="${i < 1 ? 29 : 8}" y="${104 + i * 8}" font-size="6.4" fill="#3b2a1a">${esc(l)}</text>`; });
   } else {
     s += `<text x="50" y="106" font-size="7.5" text-anchor="middle" fill="#3b2a1a">${t.color === 'grey' ? 'Police: no annex.' : 'Peasant: no annex.'}</text>
       <text x="50" y="117" font-size="6.4" text-anchor="middle" fill="#5a4630">${t.color === 'grey' ? 'In the inn, he investigates.' : 'Paid peasants go back to the bistro.'}</text>`;
@@ -1542,17 +2233,44 @@ function aliveSVG(t) {
 function deadSVG(t) {
   return `<rect width="100" height="140" rx="7" fill="#100c0b"/><path d="M8 60 C20 30 40 70 30 120 L10 132 Z M92 20 C70 40 92 80 78 130 L94 132 Z" fill="#c8483b" opacity=".85"/>
     <path d="M36 22 L64 22 L74 44 L66 124 L34 124 L26 44 Z" fill="#6b655c" stroke="#2b2722" stroke-width="2"/>
-    <rect x="34" y="40" width="32" height="18" rx="3" fill="#57514a" stroke="#2b2722"/><text x="50" y="54.5" font-size="15" text-anchor="middle" font-weight="800" fill="#e2483a">${t.rank}</text>
-    ${t.rank >= 1 ? '<path d="M44 22 q6 -12 12 0 Z" fill="#c8483b"/>' : ''}${coinSVG(78, 128, t.money, 8.5)}`;
+    <rect x="34" y="40" width="32" height="18" rx="3" fill="#57514a" stroke="#2b2722"/><text x="50" y="54.5" font-size="15" text-anchor="middle" font-weight="800" fill="#e2483a">${t.brank}</text>
+    ${t.brank >= 1 ? '<path d="M44 22 q6 -12 12 0 Z" fill="#c8483b"/>' : ''}${coinSVG(78, 128, t.money, 8.5)}`;
+}
+const rankText = t => t.rank === t.brank ? `rank ${t.rank}` : `rank ${t.rank} in a room, ${t.brank} outside`;
+function artImage(key) {
+  const cp = 'cc' + (++clipSeq);
+  return `<clipPath id="${cp}"><rect width="100" height="140" rx="7"/></clipPath><rect width="100" height="140" rx="7" fill="#17110d"/>`
+    + `<image href="${ART[key]}" width="100" height="140" preserveAspectRatio="xMidYMid slice" clip-path="url(#${cp})"/><rect width="100" height="140" rx="7" fill="none" stroke="#0c0806" stroke-width="2.5"/>`;
+}
+// Object and event cards: photo art when unlocked (O:<id>, E:<id>), otherwise a drawn card.
+function objSVG(id, {cls = '', attrs = ''} = {}) {
+  const o = OBJECTS[id], nm = o.name.toUpperCase();
+  let inner;
+  if (art('O:' + id)) inner = artImage('O:' + id);
+  else {
+    inner = `<rect width="100" height="140" rx="7" fill="#17110d"/><rect x="4" y="4" width="92" height="132" rx="5" fill="#d9c7a0"/><rect x="4" y="4" width="92" height="20" rx="5" fill="#5b3b22"/>
+      <text x="50" y="17.5" font-size="${nm.length > 14 ? 5.6 : nm.length > 10 ? 7 : 8.4}" text-anchor="middle" font-weight="800" fill="#f3e6c8" class="cfont">${esc(nm)}</text>
+      <text x="50" y="62" font-size="30" text-anchor="middle">${ICON.obj}</text>${coinSVG(84, 36, o.cost, 9)}`;
+    wrap(OBJ_SHORT[id], 20).slice(0, 4).forEach((l, i) => { inner += `<text x="50" y="${88 + i * 9}" font-size="7" text-anchor="middle" fill="#2a1d12">${esc(l)}</text>`; });
+    inner += `<text x="50" y="128" font-size="6" text-anchor="middle" fill="#5a4630" font-style="italic">${esc(OBJ_WHEN[o.when])}</text>`;
+  }
+  return `<svg class="card obj ${cls}" viewBox="0 0 100 140" role="img" aria-label="${esc(o.name)} (object, cost ${o.cost}F)" ${attrs}>${inner}</svg>`;
+}
+function eventSVG(id, {cls = ''} = {}) {
+  const ev = EVENTS[id];
+  let inner;
+  if (art('E:' + id)) inner = artImage('E:' + id);
+  else {
+    inner = `<rect width="100" height="140" rx="7" fill="#17110d"/><rect x="4" y="4" width="92" height="132" rx="5" fill="#2c4f6b"/><rect x="4" y="4" width="92" height="20" rx="5" fill="#e8d7a8"/>
+      <text x="50" y="17.5" font-size="${ev.name.length > 11 ? 7 : 8.6}" text-anchor="middle" font-weight="800" fill="#2a1d12" class="cfont">${esc(ev.name.toUpperCase())}</text>
+      <text x="50" y="60" font-size="28" text-anchor="middle">${ICON.event}</text>`;
+    wrap(ev.text.replace(/^At the end of the round, /, ''), 22).slice(0, 6).forEach((l, i) => { inner += `<text x="50" y="${82 + i * 8.5}" font-size="6.6" text-anchor="middle" fill="#f1e6cc">${esc(l)}</text>`; });
+  }
+  return `<svg class="card ev ${cls}" viewBox="0 0 100 140" role="img" aria-label="Event: ${esc(ev.name)}">${inner}</svg>`;
 }
 function cardSVG(id, {dead = false, cls = '', attrs = ''} = {}) {
-  const t = T(id), key = artFront(id) + (dead ? '~b' : ''), lab = `${t.name}${dead ? ' (corpse)' : ''}, rank ${t.rank}, ${t.money}F`;
-  let inner;
-  if (art(key)) {
-    const cp = 'cc' + (++clipSeq);
-    inner = `<clipPath id="${cp}"><rect width="100" height="140" rx="7"/></clipPath><rect width="100" height="140" rx="7" fill="#17110d"/>`
-      + `<image href="${ART[key]}" width="100" height="140" preserveAspectRatio="xMidYMid slice" clip-path="url(#${cp})"/><rect width="100" height="140" rx="7" fill="none" stroke="#0c0806" stroke-width="2.5"/>`;
-  } else inner = dead ? deadSVG(t) : aliveSVG(t);
+  const t = T(id), key = artFront(id) + (dead ? '~b' : ''), lab = `${t.name}${dead ? ' (corpse)' : ''}, ${rankText(t)}, ${t.money}F`;
+  const inner = art(key) ? artImage(key) : dead ? deadSVG(t) : aliveSVG(t);
   return `<svg class="card ${cls}" viewBox="0 0 100 140" role="img" aria-label="${esc(lab)}" ${attrs}>${inner}</svg>`;
 }
 function barnSVG() {
@@ -1582,7 +2300,7 @@ function boardSVG(big) {
   }
   S.rooms.forEach((R, i) => {
     const d = B.doors[i];
-    if (R.key === null) return;
+    if (!d || R.key === null) return;
     const fill = R.key === 'white' ? SEAT_HEX.white : pcol(R.key);
     s += `<g class="door ${UI.flash.has('r' + i) ? 'fl' : ''}"><rect x="${d.x - 28}" y="${d.y - 11}" width="40" height="22" rx="4" fill="${fill}" stroke="#111" stroke-width="2"/><text x="${d.x - 8}" y="${d.y + 6}" font-size="15" text-anchor="middle">${ICON.key}</text>`;
     if (R.rs !== null) s += `<rect x="${d.x + 14}" y="${d.y - 11}" width="22" height="22" rx="4" fill="${pcol(R.rs)}" stroke="#111" stroke-width="2"/><text x="${d.x + 25}" y="${d.y + 6}" font-size="13" text-anchor="middle">${ICON.rs}</text>`;
@@ -1610,32 +2328,34 @@ function selCost() {
   const S = UI.S, sel = UI.sel, p = actor(S);
   if (!sel) return 0;
   if (sel.mode === 'bribe' || sel.mode === 'kill') return Engine.cost(S, p, {t: sel.mode, rooms: sel.rooms});
-  if (sel.mode === 'build') return Engine.cost(S, p, {t: 'build', card: sel.card});
+  if (sel.mode === 'build') return Engine.cost(S, p, sel.room != null ? {t: 'build', room: sel.room} : {t: 'build', card: sel.card});
   if (sel.mode === 'bury') return Engine.cost(S, p, {t: 'bury', items: sel.items});
   return 0;
 }
 function selMove() {
   const sel = UI.sel; if (!sel) return null;
+  const withObjs = m => sel.objs && sel.objs.length ? {...m, objs: sel.objs.slice()} : m;
   switch (sel.mode) {
-    case 'bribe': case 'kill': return {t: sel.mode, rooms: sel.rooms, pay: sel.pay};
-    case 'build': return {t: 'build', card: sel.card, pay: sel.pay};
-    case 'bury': return {t: 'bury', items: sel.items.map(it => ({id: it.id, owner: it.owner, annex: it.annex})), pay: sel.pay};
+    case 'bribe': case 'kill': return withObjs({t: sel.mode, rooms: sel.rooms, pay: sel.pay});
+    case 'build': return withObjs(sel.room != null ? {t: 'build', room: sel.room, pay: sel.pay} : {t: 'build', card: sel.card, pay: sel.pay});
+    case 'bury': return withObjs({t: 'bury', items: sel.items.map(it => ({id: it.id, owner: it.owner, annex: it.annex})), pay: sel.pay});
     case 'pass': return {t: 'pass', launder: sel.k || 0};
   }
   return null;
 }
+const buildCardOf = sel => sel.room != null ? UI.S.rooms[sel.room].guest : sel.card;
 function tgtRoom(i) {
   const S = UI.S; if (!myTurn()) return false;
   const pd = S.pending, R = S.rooms[i];
   if (pd.t === 'lodge') return R.key !== null && !R.guest;
-  if (pd.t === 'rs') return R.key !== null && R.rs === null;
+  if (pd.t === 'rs') return R.key !== null && R.rs === null && !Engine.isTrailer(R);
   if (pd.t === 'monk') return R.key === 'white';
   if (pd.t !== 'turn' || !R.guest) return false;
   const sel = UI.sel;
   if (sel && (sel.mode === 'bribe' || sel.mode === 'kill')) return sel.multi;
   if (sel && sel.mode !== 'choose') return false;
   const o = Engine.options(S, pd.p);
-  return o.bribe.includes(i) || o.kill.includes(i);
+  return o.bribe.includes(i) || o.kill.includes(i) || o.wheel.includes(i);
 }
 function tgtHand(id) {
   const S = UI.S; if (!myTurn()) return false;
@@ -1643,6 +2363,7 @@ function tgtHand(id) {
   if (pd.t === 'release') return true;
   if (pd.t !== 'turn') return false;
   if (sel && ['bribe', 'kill', 'build', 'bury'].includes(sel.mode)) return id !== sel.card;
+  if (sel && sel.mode !== 'choose') return false;
   return Engine.options(S, pd.p).build.includes(id);
 }
 function tgtCorpse(id) {
@@ -1654,8 +2375,8 @@ function tgtCorpse(id) {
 }
 function tgtAnnex(q, i) {
   const S = UI.S, sel = UI.sel; if (!myTurn() || !sel || sel.mode !== 'bury') return false;
-  const used = sel.items.slice(0, -1).filter(it => it.owner === q && it.annex === i).length;
-  return Engine.annexFree(S.players[q].annexes[i]) - used > 0;
+  const cur = sel.items[sel.items.length - 1];
+  return Engine.annexTargets(S, sel.items.slice(0, -1), cur.id, S.pending.p).some(a => a.p === q && a.i === i);
 }
 function tgtBistro() {
   const S = UI.S; if (!myTurn() || S.pending.t !== 'turn' || (UI.sel && UI.sel.mode !== 'choose' && UI.sel.mode !== 'bistro')) return false;
@@ -1669,46 +2390,69 @@ function roomHTML(i) {
   const key = !open ? '<span class="closed">closed</span>' : `<span class="keychip" style="--c:${R.key === 'white' ? SEAT_HEX.white : pcol(R.key)}" title="${R.key === 'white' ? 'Neutral room (white Key)' : 'Room of ' + esc(pname(R.key))}">${ICON.key}</span>`;
   const rs = R.rs !== null ? `<span class="rschip" style="--c:${pcol(R.rs)}" title="Room Service: ${esc(pname(R.rs))} earns the guest's rank">${ICON.rs}</span>` : '';
   const police = R.guest && Engine.isPolice(R.guest) ? `<span class="cop" title="Police: investigation at the end of the round">${ICON.police}</span>` : '';
-  return `<div class="room ${open ? '' : 'shut'} ${tgtRoom(i) ? 'tgt' : ''} ${chosen ? 'chosen' : ''} ${UI.flash.has('r' + i) ? 'fl' : ''}" data-a="room" data-i="${i}" tabindex="-1">
-    <div class="door"><b>${i + 1}</b>${key}${rs}${police}</div>
-    <div class="slot">${R.guest ? cardSVG(R.guest) : `<div class="empty">${open ? 'free' : ''}</div>`}</div></div>`;
+  const extras = (R.coffee != null ? `<span class="tok" style="--c:${pcol(R.coffee)}" title="Coffee from ${esc(pname(R.coffee))}: cannot be bribed or killed this round">${ICON.coffee}</span>` : '')
+    + (R.cake != null ? `<span class="tok" style="--c:${pcol(R.cake)}" title="Cake from ${esc(pname(R.cake))}: 2x rank if the guest is still here before travelers leave">${ICON.cake}</span>` : '');
+  const tr = Engine.isTrailer(R);
+  return `<div class="room ${open ? '' : 'shut'} ${tr ? 'trailer' : ''} ${tgtRoom(i) ? 'tgt' : ''} ${chosen ? 'chosen' : ''} ${UI.flash.has('r' + i) ? 'fl' : ''}" data-a="room" data-i="${i}" tabindex="-1">
+    <div class="door"><b>${tr ? ICON.trailer : i + 1}</b>${key}${rs}${police}${extras}</div>
+    <div class="slot">${R.guest ? cardSVG(R.guest) : `<div class="empty">${open ? (tr ? 'trailer' : 'free') : ''}</div>`}</div></div>`;
 }
 function exitCounts(S) { const c = {}; for (const id of S.exit) c[T(id).color] = (c[T(id).color] || 0) + 1; return c; }
+const evLiveNow = S => !!(S.ev && S.ev.cur && S.rooms.some(R => R.guest && Engine.isCarnie(R.guest)));
+function carnivalHTML() {
+  const S = UI.S, trailers = S.rooms.map((R, i) => Engine.isTrailer(R) ? i : -1).filter(i => i >= 0);
+  if (!S.ev && !trailers.length) return '';
+  const ev = S.ev ? `<button class="evslot ${evLiveNow(S) ? 'live' : ''}" data-a="explain" data-k="event" title="Event deck">${S.ev.cur ? eventSVG(S.ev.cur) : `<div class="empty">${ICON.event}<br>no event yet</div>`}
+    <span class="lab">${S.ev.cur ? (evLiveNow(S) ? 'Event: a carnie is in' : 'Event: no carnie left') : 'Events'}</span></button>` : '';
+  return `<div class="rooms carnival">${ev}${trailers.map(roomHTML).join('')}</div>`;
+}
 function innHTML() {
   const S = UI.S, top = S.entrance[0], ec = exitCounts(S);
   const entr = `<button class="stack" data-a="entrance" title="Entrance Stack: ${S.entrance.length} cards">${top ? cardSVG(top) : '<div class="empty">empty</div>'}<span class="cnt">${S.entrance.length}</span><span class="lab">Entrance</span></button>`;
-  const exit = `<button class="stack exitst" data-a="exit" title="Exit Stack: ${S.exit.length} cards"><div class="exitbars">${['blue', 'red', 'purple', 'green', 'grey'].map(c => `<i style="--c:${COL_HEX[c]};--h:${Math.min(100, (ec[c] || 0) * 9)}%"></i>`).join('')}</div><span class="cnt">${S.exit.length}</span><span class="lab">Exit</span></button>`;
+  const exit = `<button class="stack exitst" data-a="exit" title="Exit Stack: ${S.exit.length} cards"><div class="exitbars">${EXIT_COLS.map(c => `<i style="--c:${COL_HEX[c]};--h:${Math.min(100, (ec[c] || 0) * 9)}%"></i>`).join('')}</div><span class="cnt">${S.exit.length}</span><span class="lab">Exit</span></button>`;
   const bistro = `<button class="stack bist ${tgtBistro() ? 'tgt' : ''}" data-a="bistro" title="Bistro: ${S.bistro.length} peasants"><span class="big">${ICON.bistro}</span><span class="cnt">${S.bistro.length}</span><span class="lab">Bistro</span></button>`;
   return `<section class="inn"><div class="rooms rtop">${[0, 1, 2, 3].map(roomHTML).join('')}</div>
     <div class="mid">${entr}<div class="boardwrap"><button class="ghost bigb" data-a="bigboard" title="Enlarge the board" aria-label="Enlarge the board">\u2922</button>${boardSVG()}</div><div class="stk2">${bistro}${exit}</div></div>
-    <div class="rooms rbot">${[4, 5, 6, 7].map(roomHTML).join('')}</div></section>`;
+    <div class="rooms rbot">${[4, 5, 6, 7].map(roomHTML).join('')}</div>${carnivalHTML()}</section>`;
 }
+const tuckHTML = id => Engine.isFiller(id) ? `<span class="tuck" title="Face-down card: the second twin">?</span>`
+  : `<span class="tuck ${Engine.special(id) === 'dwarf' ? 'side' : ''}" title="${esc(T(id).name)}: ${T(id).money}F${Engine.special(id) === 'dwarf' ? ' (sideways: takes no place)' : ''}">${T(id).money}</span>`;
 function annexHTML(q, i, small) {
-  const S = UI.S, a = S.players[q].annexes[i], r = Engine.annexRank(a), tg = tgtAnnex(q, i);
-  const under = a.under.map(id => `<span class="tuck" title="${esc(T(id).name)}: ${T(id).money}F">${T(id).money}</span>`).join('');
-  return `<div class="annex ${tg ? 'tgt' : ''} ${small ? 'sm' : ''}" data-a="annex" data-p="${q}" data-i="${i}" title="${a.id === 'barn' ? 'Barn (player aid): rank 1' : esc(T(a.id).annex) + ': ' + esc(T(a.id).text)}">
-    ${a.id === 'barn' ? barnSVG() : cardSVG(a.id)}<div class="cap">${ICON.bury} ${a.under.length}/${r}${under}</div></div>`;
+  const S = UI.S, a = S.players[q].annexes[i], r = Engine.annexRank(a), tg = tgtAnnex(q, i), used = r - Engine.annexFree(a);
+  const title = a.id === 'barn' ? 'Barn (player aid): rank 1' : esc(T(a.id).annex) + ': ' + esc(T(a.id).text) + (a.inn ? ' (in the inn: bury here only while no traveler is on it)' : '');
+  return `<div class="annex ${tg ? 'tgt' : ''} ${small ? 'sm' : ''} ${a.inn ? 'ininn' : ''}" data-a="annex" data-p="${q}" data-i="${i}" title="${title}">
+    ${a.id === 'barn' ? barnSVG() : cardSVG(a.id)}<div class="cap">${ICON.bury} ${used}/${r}${a.under.map(tuckHTML).join('')}${a.inn ? ` <small>${ICON.trailer} in the inn</small>` : ''}</div></div>`;
 }
 function tableauHTML(p) {
   const S = UI.S, P = S.players[p], sel = UI.sel;
   const inPay = id => sel && sel.pay && sel.pay.includes(id), inRel = id => sel && sel.ids && sel.ids.includes(id);
   const act = sel && Engine.actionOf({t: sel.mode === 'bistro' ? 'peasants' : sel.mode});
   const hand = P.hand.map(id => {
-    const dest = inPay(id) ? Engine.payDest(S, p, act, id) : '';
+    const dest = inPay(id) ? Engine.payDest(S, p, act, id, sel.objs || []) : '';
     const badge = dest ? `<span class="paybadge ${dest}">${dest === 'hand' ? '\u21A9 returns' : dest === 'bistro' ? `${ICON.bistro} bistro` : '\u2192 exit'}</span>` : inRel(id) ? '<span class="paybadge exit">lets go</span>' : '';
     return `<div class="hc ${tgtHand(id) ? 'tgt' : ''} ${inPay(id) || inRel(id) ? 'paying' : ''} ${sel && sel.card === id ? 'chosen' : ''}" data-a="hand" data-id="${id}">${cardSVG(id)}${badge}</div>`;
   }).join('') || '<div class="none">No accomplices</div>';
-  const corpses = P.corpses.map(id => `<div class="hc ${tgtCorpse(id) ? 'tgt' : ''} ${sel && sel.items && sel.items.some(it => it.id === id) ? 'chosen' : ''}" data-a="corpse" data-id="${id}">${cardSVG(id, {dead: true})}</div>`).join('') || '<div class="none">None</div>';
+  const corpses = P.corpses.map(id => `<div class="hc ${tgtCorpse(id) ? 'tgt' : ''} ${sel && sel.items && sel.items.some(it => it.id === id) ? 'chosen' : ''} ${P.snow === id ? 'snowed' : ''}" data-a="corpse" data-id="${id}">${cardSVG(id, {dead: true})}${P.snow === id ? `<span class="paybadge hand">${ICON.snow} hidden</span>` : ''}</div>`).join('') || '<div class="none">None</div>';
   const nm = you(p) ? 'Your' : esc(pname(p)) + '\u2019s';
+  const drafting = !!S.draft;
+  const objRow = Engine.mods(S).objects ? `<div class="trow"><h3>${nm} secret objects <small>${P.objects.length ? 'only you can see them' : drafting ? 'being drafted' : 'all used'}</small></h3><div class="cards">${P.objects.map(o => `<div class="hc" data-a="object" data-id="${o}">${objSVG(o)}</div>`).join('') || `<div class="none">${drafting ? 'Pick them from the draft' : 'None left'}</div>`}</div></div>` : '';
+  const due = Engine.payable(P).length;
   return `<section class="tableau" style="--pc:${pcol(p)}">
     <div class="trow"><h3>${nm} hand <small>${P.hand.length} \u00B7 wages ${wagesDue(P)}F</small></h3><div class="cards">${hand}</div></div>
     <div class="trow"><h3>${nm} annexes <small>${P.annexes.length - 1} built \u00B7 ${Engine.buriedUnder(P)} buried</small></h3><div class="cards">${P.annexes.map((a, i) => annexHTML(p, i)).join('')}</div></div>
-    <div class="trow ${P.corpses.length ? 'warn' : ''}"><h3>${nm} unburied corpses <small>${P.corpses.length ? `${P.corpses.length * 10}F if the police come` : ''}</small></h3><div class="cards">${corpses}</div></div></section>`;
+    <div class="trow ${P.corpses.length ? 'warn' : ''}"><h3>${nm} unburied corpses <small>${due ? `${due * 10}F if the police come` : ''}</small></h3><div class="cards">${corpses}</div></div>${objRow}</section>`;
+}
+// 50F checks (optional): five 10F checks shown as one 50F check.
+function checksText(n) {
+  if (!n) return '';
+  if (!Engine.mods(UI.S).check50 || n < 5) return `${ICON.check}${n}`;
+  const f = Math.floor(n / 5), r = n % 5;
+  return `${ICON.check}50\u00D7${f}${r ? ` + ${ICON.check}${r}` : ''}`;
 }
 function moneyChip(p, big) {
   const P = UI.S.players[p];
   return `<span class="money ${big ? 'big' : ''} ${actor(UI.S) === p ? 'act' : ''}" style="--pc:${pcol(p)}" title="${esc(pname(p))}: ${P.cash}F cash and ${P.checks} check${P.checks === 1 ? '' : 's'} = ${Engine.wealth(P)}F">
-    <i></i><b>${P.cash}F</b>${P.checks ? `<span class="chk">${ICON.check}${P.checks}</span>` : ''}<small>${esc(who(p)).slice(0, 10)}</small>${deltaHTML(p)}</span>`;
+    <i></i><b>${P.cash}F</b>${P.checks ? `<span class="chk">${checksText(P.checks)}</span>` : ''}<small>${esc(who(p)).slice(0, 10)}</small>${deltaHTML(p)}</span>`;
 }
 function deltaHTML(p) {
   return UI.deltas.filter(d => d.p === p).map(d => `<span class="delta ${d.v > 0 ? 'up' : 'dn'}">${d.v > 0 ? '+' : '\u2212'}${Math.abs(d.v)}F</span>`).join('');
@@ -1723,6 +2467,9 @@ function turnText() {
     case 'turn': return `${yours ? 'Your' : nm + '\u2019s'} action ${pd.ar + 1}/2`;
     case 'grave': return `${nm} ${yours ? 'pay' : 'pays'} the gravedigger`;
     case 'release': return `${nm} ${yours ? 'let' : 'lets'} accomplices go`;
+    case 'draft': return `${nm} ${yours ? 'pick' : 'picks'} an object`;
+    case 'objects': return `${nm} may play an object`;
+    case 'study': return `${nm}: the Study`;
     default: return `${nm} ${yours ? 'choose' : 'chooses'}`;
   }
 }
@@ -1733,6 +2480,7 @@ function topHTML() {
     <span class="tpill turn" style="--c:${ap !== null ? pcol(ap) : '#888'}"><i></i>${turnText()}</span>
     <button class="tpill rnd" data-a="explain" data-k="round" title="Round ${S.round}, season ${S.season}: ${left} cards in the Entrance Stack"><b>R${S.round}</b><small>Season ${S.season}${S.final ? ' \u00B7 <em>final</em>' : ''}</small><span class="bar"><i style="width:${Math.min(100, left / 64 * 100)}%"></i></span><small>${left} left</small></button>
     ${cops(S) ? `<button class="tpill cops" data-a="explain" data-k="police" title="Police in the inn">${ICON.police}<small>Police</small></button>` : ''}
+    ${S.ev && S.ev.cur ? `<button class="tpill evp ${evLiveNow(S) ? 'live' : ''}" data-a="explain" data-k="event" title="Event: ${esc(EVENTS[S.ev.cur].name)}">${ICON.event}<small>${esc(EVENTS[S.ev.cur].name)}</small></button>` : ''}
     ${moneyChip(me, true)}${others.map(p => moneyChip(p, false)).join('')}<span class="spacer"></span>
     <button data-a="mute" title="Sound" aria-label="Sound">${UI.mute ? '\u{1F507}' : '\u{1F50A}'}</button><button data-a="help" title="How to play" aria-label="How to play">?</button></div>`;
 }
@@ -1759,8 +2507,30 @@ function promptHTML() {
         ${S.rooms.some(R => R.rs !== null) ? '<br><small>Rooms with a Room Service token pay its owner the guest\u2019s rank.</small>' : ''}</div>${btns(opt('Lodge the rest for me', 'autolodge'))}</div>`;
     case 'rs': return `<div class="prompt"><div class="ptext"><b>Room Service.</b> Tap a door with a Key and no Room Service token. Guests lodged there pay you their rank.</div>${btns()}</div>`;
     case 'monk': return `<div class="prompt"><div class="ptext"><b>The Monk\u2019s Room.</b> Tap a room with a white Key: it becomes yours.</div>${btns()}</div>`;
+    case 'draft': {
+      const left = 3 - pd.step;
+      return `<div class="prompt"><div class="ptext"><b>Aunt Ginette\u2019s tips and tricks.</b> Keep one object (${plural(left, 'pick')} left; the rest is passed on). You start with 10F minus the cost of the 3 you keep. Each object is played once.</div>
+        <div class="objpick">${pd.opts.map(id => `<button data-a="opt" data-o="draft:${id}" title="${esc(OBJECTS[id].text)}">${objSVG(id)}<small><b>${esc(OBJECTS[id].name)}</b> \u00B7 ${OBJECTS[id].cost}F<br>${esc(OBJ_SHORT[id])}</small></button>`).join('')}</div>${btns()}</div>`;
+    }
+    case 'objects': {
+      const plays = Engine.objOptions(S, pd.p, pd.when), ids = [...new Set(plays.map(pl => pl.id))];
+      const head = {welcome: 'The travelers are in. You may play objects now.', police: 'The gravedigger is coming. You may play an object first.', end: 'End of the round. You may play an object.'}[pd.when];
+      if (sel && sel.mode === 'obj') {
+        const mine = plays.map((pl, k) => [pl, k]).filter(([pl]) => pl.id === sel.id);
+        return `<div class="prompt"><div class="pcard">${objSVG(sel.id)}</div><div class="ptext"><b>${esc(OBJECTS[sel.id].name)}</b>: ${esc(OBJECTS[sel.id].text)}</div>
+          ${btns(...mine.map(([pl, k]) => opt(objLabel(S, pd.p, pl), 'objp:' + k)), opt('Back', 'cancel', 'ghost'))}</div>`;
+      }
+      return `<div class="prompt"><div class="ptext"><b>${ICON.obj} ${head}</b><br><small>Objects do not count as actions. Each is used once.</small></div>
+        ${btns(opt('Carry on', 'objdone', 'primary'), ...ids.map(id => {
+          const n = plays.filter(pl => pl.id === id).length;
+          return n === 1 ? opt(objLabel(S, pd.p, plays.find(pl => pl.id === id)), 'objp:' + plays.findIndex(pl => pl.id === id)) : opt(`${ICON.obj} ${esc(OBJECTS[id].name)}\u2026`, 'objpick:' + id);
+        }))}</div>`;
+    }
+    case 'study':
+      return `<div class="prompt"><div class="ptext"><b>Your Study.</b> ${esc(pname(S.last ? S.last.p : 0))} just bought checks: you may exchange 10F for one check too.</div>
+        ${btns(opt(`${ICON.check} Buy a check (\u221210F)`, 'study:1', 'primary'), opt('No thanks', 'study:0'))}</div>`;
     case 'grave': {
-      const k = P.corpses.length, o = [];
+      const k = Engine.payable(P).length, o = [];
       for (let c = pd.lo; c <= pd.hi; c++) o.push(opt(`${c ? plural(c, 'check') : 'Cash only'}${k - c ? ` + ${Math.min(P.cash, (k - c) * 10)}F` : ''}`, 'grave:' + c, c === pd.lo ? 'primary' : ''));
       return `<div class="prompt warnp"><div class="ptext"><b>The village gravedigger</b> takes 10F for each of your ${plural(k, 'unburied corpse')}${pd.why === 'end' ? ' (end of the game)' : ''}. Pay with checks or cash:</div>${btns(...o)}</div>`;
     }
@@ -1772,16 +2542,19 @@ function promptHTML() {
   }
   // the main action decision
   const o = Engine.options(S, pd.p), danger = cops(S) && P.corpses.length;
-  const warn = danger ? `<div class="pwarn">${ICON.police} Police in the inn: ${plural(P.corpses.length, 'unburied corpse')} will cost ${P.corpses.length * 10}F at the end of the round${pd.ar === 1 ? ' unless you bury now' : ''}.</div>` : '';
+  const evWarn = evLiveNow(S) ? `<div class="pwarn ev">${ICON.event} ${esc(EVENTS[S.ev.cur].name)}: ${esc(EVENTS[S.ev.cur].text.replace(/^At the end of the round, /, ''))} <small>(only if a carnie is still in the inn)</small></div>` : '';
+  const warn = (danger ? `<div class="pwarn">${ICON.police} Police in the inn: ${plural(P.corpses.length, 'unburied corpse')} will cost ${P.corpses.length * 10}F at the end of the round${pd.ar === 1 ? ' unless you bury now' : ''}.</div>` : '') + evWarn;
   if (!sel) {
     return `<div class="prompt"><div class="ptext"><b>Action ${pd.ar + 1} of 2.</b> Tap a traveler to <b>bribe</b> or <b>kill</b>, a card in your hand to <b>build</b> its annex, one of your corpses to <b>bury</b> it, or the bistro for peasants.</div>${warn}
       ${btns(opt(`${ICON.pass} Pass / launder`, 'pass'))}</div>`;
   }
   if (sel.mode === 'choose') {
     const id = S.rooms[sel.room].guest, cb = Engine.cost(S, pd.p, {t: 'bribe', rooms: [sel.room]}), ck = Engine.cost(S, pd.p, {t: 'kill', rooms: [sel.room]});
-    return `<div class="prompt"><div class="pcard">${cardSVG(id)}</div><div class="ptext"><b>${esc(T(id).name)}</b> in room ${sel.room + 1}: rank ${T(id).rank}, ${T(id).money}F in his pockets.${T(id).annex ? `<br><small>${esc(T(id).annex)}: ${esc(T(id).text)}</small>` : ''}</div>
+    const sp = Engine.special(id);
+    const wheel = o.wheel.includes(sel.room) ? opt(`${ICON.build} Wheelbarrow: build here (${plural(Engine.cost(S, pd.p, {t: 'build', room: sel.room}), 'card')})`, 'wheel') : '';
+    return `<div class="prompt"><div class="pcard">${cardSVG(id)}</div><div class="ptext"><b>${esc(T(id).name)}</b> in ${esc(Engine.roomName(S, sel.room))}: ${rankText(T(id))}, ${T(id).money}F in his pockets.${T(id).annex ? `<br><small>${esc(T(id).annex)}: ${esc(T(id).text)}</small>` : ''}${sp ? `<br><small>${esc(SPECIAL_SHORT[sp])}</small>` : ''}</div>
       ${btns(opt(`${ICON.bribe} Bribe (${plural(cb, 'card')})`, 'bribe', 'primary', o.bribe.includes(sel.room) ? '' : 'Not enough cards in hand'),
-        opt(`${ICON.kill} Kill (${plural(ck, 'card')})`, 'kill', '', o.kill.includes(sel.room) ? '' : 'Not enough cards in hand'), opt('Cancel', 'cancel', 'ghost'))}</div>`;
+        opt(`${ICON.kill} Kill (${plural(ck, 'card')})`, 'kill', '', o.kill.includes(sel.room) ? '' : 'Not enough cards in hand'), wheel, opt('Cancel', 'cancel', 'ghost'))}</div>`;
   }
   if (sel.mode === 'bistro') {
     const b = [];
@@ -1798,18 +2571,36 @@ function promptHTML() {
   // bribe / kill / build / bury: show the payment
   const m = selMove(), need = selCost(), err = Engine.check(S, m), act = Engine.actionOf(m);
   let what = '';
-  if (sel.mode === 'bribe' || sel.mode === 'kill') what = `${sel.mode === 'bribe' ? `${ICON.bribe} Bribe` : `${ICON.kill} Kill`} ${sel.rooms.map(i => `the <b>${esc(T(S.rooms[i].guest).name)}</b> (room ${i + 1})`).join(' and ')}.${sel.multi ? ' <small>Tap more travelers to add them.</small>' : ''}`;
-  if (sel.mode === 'build') what = `${ICON.build} Build the <b>${esc(T(sel.card).annex)}</b>: ${esc(T(sel.card).text)}`;
+  if (sel.mode === 'bribe' || sel.mode === 'kill') what = `${sel.mode === 'bribe' ? `${ICON.bribe} Bribe` : `${ICON.kill} Kill`} ${sel.rooms.map(i => `the <b>${esc(T(S.rooms[i].guest).name)}</b> (${esc(Engine.roomName(S, i))})`).join(' and ')}.${sel.multi ? ' <small>Tap more travelers to add them.</small>' : ''}`;
+  if (sel.mode === 'build') { const bc = buildCardOf(sel); what = `${ICON.build} Build the <b>${esc(T(bc).annex)}</b>${sel.room != null ? ` of the ${esc(T(bc).name)}, wheeled out of ${esc(Engine.roomName(S, sel.room))}` : ''}: ${esc(T(bc).text)}`; }
   if (sel.mode === 'bury') {
     what = `${ICON.bury} Bury ${sel.items.map(it => `the <b>${esc(T(it.id).name)}</b> (${T(it.id).money}F) under ${it.owner === undefined ? '<em>choose an annex</em>' : annexName(it.owner, it.annex)}`).join('; ')}.`;
     what += Engine.count(P, 'crypt') ? ' <small>Tap more corpses to add them.</small>' : '';
   }
   const dests = sel.mode === 'bury' ? `<div class="dests">${destButtons()}</div>` : '';
-  const pay = sel.pay.map(id => `${esc(T(id).name)} ${({hand: '\u21A9', bistro: ICON.bistro, exit: '\u2192'})[Engine.payDest(S, pd.p, act, id)]}`).join(', ');
+  const pay = sel.pay.map(id => `${esc(T(id).name)} ${({hand: '\u21A9', bistro: ICON.bistro, exit: '\u2192'})[Engine.payDest(S, pd.p, act, id, sel.objs || [])]}`).join(', ');
   const pv = err ? '' : outcomeText(S, m, pd.p);
+  const togs = (P.objects || []).filter(ob => OBJECTS[ob].when === act && ob !== 'wheelbarrow').map(ob => {
+    const on = (sel.objs || []).includes(ob);
+    return `<button class="objtog ${on ? 'on' : ''}" data-a="opt" data-o="tog:${ob}" title="${esc(OBJECTS[ob].text)}">${on ? '\u2714' : ICON.obj} ${esc(OBJECTS[ob].name)} <small>${esc(OBJ_SHORT[ob])}</small></button>`;
+  }).join('');
   return `<div class="prompt"><div class="ptext">${what}<br><small>Pay ${plural(need, 'accomplice')}${need ? `: ${pay || '\u2014'}. Tap cards in your hand to change the payment (\u21A9 returns to hand: the action\u2019s aptitude).` : '.'}</small>
-    ${pv ? `<div class="pv">${pv}</div>` : ''}${err ? `<div class="perr">${esc(err)}</div>` : ''}</div>${dests}${warn}
+    ${pv ? `<div class="pv">${pv}</div>` : ''}${err ? `<div class="perr">${esc(err)}</div>` : ''}</div>${dests}${togs ? `<div class="togs">${togs}</div>` : ''}${warn}
     ${btns(opt('Confirm', 'confirm', 'primary', err), opt('Cancel', 'cancel', 'ghost'))}</div>`;
+}
+function objLabel(S, p, pl) {
+  const o = OBJECTS[pl.id], g = pl.room != null ? S.rooms[pl.room].guest : null, rn = pl.room != null ? Engine.roomName(S, pl.room) : '';
+  switch (pl.id) {
+    case 'coffee': return `${ICON.coffee} Coffee: ${esc(T(g).name)} (${esc(rn)}), +${T(g).rank}F`;
+    case 'cake': return `${ICON.cake} Cake: ${esc(T(g).name)} (${esc(rn)}), +${2 * T(g).rank}F if he stays`;
+    case 'poison': { const R = S.rooms[pl.room], to = typeof R.key === 'number' ? R.key : p; return `\u2620\uFE0F Poison the ${esc(T(g).name)} (${esc(rn)}): corpse to ${to === p ? 'you' : esc(pname(to))}`; }
+    case 'rug': return `Rug: ${esc(T(pl.corpse).name)}\u2019s corpse to ${esc(pname(pl.to))}`;
+    case 'letter': return `\u2709\uFE0F Letter of Denunciation`;
+    case 'snowpile': return `${ICON.snow} Snow Pile over the ${esc(T(pl.corpse).name)}`;
+    case 'tomb': return `\u{1FAA6} Tomb: ${pl.owner === p ? 'your' : esc(pname(pl.owner)) + '\u2019s'} ${esc(T(pl.corpse).name)}, +${T(pl.corpse).money / 2}F`;
+    case 'confessional': return `Confessional: take 6F from the top burier`;
+  }
+  return esc(o.name);
 }
 function annexName(q, i) {
   const a = UI.S.players[q].annexes[i];
@@ -1817,7 +2608,7 @@ function annexName(q, i) {
 }
 function destButtons() {
   const S = UI.S, sel = UI.sel, p = actor(S), cur = sel.items[sel.items.length - 1];
-  return Engine.annexTargets(S, sel.items.slice(0, -1)).map(a => `<button data-a="dest" data-p="${a.p}" data-i="${a.i}" class="${cur.owner === a.p && cur.annex === a.i ? 'on' : ''}" style="--pc:${pcol(a.p)}">
+  return Engine.annexTargets(S, sel.items.slice(0, -1), cur.id, p).map(a => `<button data-a="dest" data-p="${a.p}" data-i="${a.i}" class="${cur.owner === a.p && cur.annex === a.i ? 'on' : ''}" style="--pc:${pcol(a.p)}">
     ${annexName(a.p, a.i)} <small>${a.free} free${a.p === p ? '' : ' \u00B7 split'}</small></button>`).join('');
 }
 function outcomeText(S, m, p) {
@@ -1832,7 +2623,7 @@ function outcomeText(S, m, p) {
   }
   const P = S.players[p];
   if (m.t === 'bribe') out.push(`${m.rooms.map(i => T(S.rooms[i].guest).name).join(' and ')} ${m.rooms.length > 1 ? 'join' : 'joins'} your hand (+1F wages each)`);
-  if (m.t === 'build') out.push(`new ${T(m.card).annex}, room for ${plural(T(m.card).rank, 'corpse')}`);
+  if (m.t === 'build') { const bc = m.card || S.rooms[m.room].guest; out.push(`new ${T(bc).annex}, room for ${plural(T(bc).brank, 'corpse')}`); }
   if (m.t === 'kill' || m.t === 'killPeasant') out.push('a corpse to bury before the police come');
   if (P.cash + (pv[p].cash || 0) >= 40 && !S.opts.unlimited && (pv[p].cash || 0) > 0) out.push('cash capped at 40F');
   return out.join(' \u00B7 ') || 'no money changes hands';
@@ -1843,11 +2634,12 @@ function playersHTML() {
   const order = [me, ...S.players.map((_, p) => p).filter(p => p !== me)];
   return order.map(p => {
     const P = S.players[p], keys = Engine.keysOf(S, p);
-    const chips = P.hand.map(id => `<span class="chip" style="--c:${COL_HEX[T(id).color]}" title="${esc(T(id).name)} (rank ${T(id).rank})">${esc(T(id).name)}</span>`).join('');
-    const ann = P.annexes.map((a, i) => `<button class="chip ann ${tgtAnnex(p, i) ? 'tgt' : ''}" data-a="annex" data-p="${p}" data-i="${i}" style="--c:${a.id === 'barn' ? '#c9a92c' : COL_HEX[T(a.id).color]}" title="${a.id === 'barn' ? 'Barn' : esc(T(a.id).annex + ': ' + T(a.id).text)}">${a.id === 'barn' ? 'Barn' : esc(T(a.id).annex)} <small>${ICON.bury}${a.under.length}/${Engine.annexRank(a)}</small></button>`).join('');
+    const chips = P.hand.map(id => `<span class="chip" style="--c:${COL_HEX[T(id).color]}" title="${esc(T(id).name)} (${rankText(T(id))})">${esc(T(id).name)}</span>`).join('');
+    const ann = P.annexes.map((a, i) => `<button class="chip ann ${tgtAnnex(p, i) ? 'tgt' : ''}" data-a="annex" data-p="${p}" data-i="${i}" style="--c:${a.id === 'barn' ? '#c9a92c' : COL_HEX[T(a.id).color]}" title="${a.id === 'barn' ? 'Barn' : esc(T(a.id).annex + ': ' + T(a.id).text)}">${a.id === 'barn' ? 'Barn' : esc(T(a.id).annex)}${a.inn ? ' ' + ICON.trailer : ''} <small>${ICON.bury}${Engine.annexRank(a) - Engine.annexFree(a)}/${Engine.annexRank(a)}</small></button>`).join('');
+    const objs = Engine.mods(S).objects ? ` \u00B7 ${ICON.obj} ${p === me && humans().includes(p) ? P.objects.map(o => esc(OBJECTS[o].name)).join(', ') || (S.draft ? 'drafting objects' : 'no objects') : plural(P.objects.length, 'secret object')}` : '';
     return `<div class="pl ${actor(S) === p ? 'act' : ''} ${UI.flash.has('p' + p) ? 'fl' : ''}" style="--pc:${pcol(p)}">
       <button class="plh" data-a="player" data-p="${p}"><i></i><b>${esc(who(p))}</b><small>${isHuman(p) ? (you(p) ? '' : 'human') : 'AI ' + seat(p).level}${S.first === p ? ' \u00B7 first player' : ''}</small><span class="tot">${Engine.wealth(P)}F</span></button>
-      <div class="plrow">${ICON.cash} ${P.cash}F \u00B7 ${ICON.check} ${P.checks} \u00B7 ${ICON.key} ${plural(keys, 'room')} \u00B7 ${ICON.bury} ${Engine.buriedUnder(P)} buried${P.corpses.length ? ` \u00B7 <b class="bad">${plural(P.corpses.length, 'corpse')}</b>` : ''}</div>
+      <div class="plrow">${ICON.cash} ${P.cash}F \u00B7 ${checksText(P.checks) || ICON.check + 0} \u00B7 ${ICON.key} ${plural(keys, 'room')} \u00B7 ${ICON.bury} ${Engine.buriedUnder(P)} buried${P.corpses.length ? ` \u00B7 <b class="bad">${plural(P.corpses.length, 'corpse')}</b>` : ''}${objs}</div>
       <div class="plrow"><span class="muted">Hand ${P.hand.length}:</span> ${chips || '\u2014'}</div><div class="plrow chips">${ann}</div></div>`;
   }).join('');
 }
@@ -1871,7 +2663,7 @@ function intelHTML() {
       <ul class="intel">${notes.map(n => `<li>${esc(n)}</li>`).join('') || '<li class="muted">Nothing worrying.</li>'}</ul></div>`;
   }).join('');
   return `${rows}<div class="pl"><div class="plh static"><b>The stacks</b></div><div class="plrow">Entrance ${S.entrance.length} \u00B7 Exit ${S.exit.length} \u00B7 set aside at setup ${S.removed.length} (unseen)</div>
-    <div class="plrow">Exit Stack by colour: ${['blue', 'red', 'purple', 'green', 'grey'].map(c => `<span class="chip" style="--c:${COL_HEX[c]}">${COLOR_NAMES[c]} ${ec[c] || 0}</span>`).join(' ')}</div>
+    <div class="plrow">Exit Stack by colour: ${EXIT_COLS.filter(c => c !== 'orange' || Engine.mods(S).carnies).map(c => `<span class="chip" style="--c:${COL_HEX[c]}">${COLOR_NAMES[c]} ${ec[c] || 0}</span>`).join(' ')}</div>
     <div class="plrow muted">End-of-game annexes pay 4F per card of their colour in the Exit Stack.</div></div>`;
 }
 function sideBody() {
@@ -1933,7 +2725,7 @@ function commit(m, human) {
     if (d || c) UI.flash.add('p' + p);
     if (d && !UI.auto && !UI.freeze) { const t = Date.now(); UI.deltas.push({p, v: d, t}); setTimeout(() => { UI.deltas = UI.deltas.filter(x => x.t !== t); }, 1800); }
   });
-  N.rooms.forEach((R, i) => { const O = prev.rooms[i]; if (R.guest !== O.guest || R.key !== O.key || R.rs !== O.rs) UI.flash.add('r' + i); });
+  N.rooms.forEach((R, i) => { const O = prev.rooms[i] || {}; if (R.guest !== O.guest || R.key !== O.key || R.rs !== O.rs || R.coffee !== O.coffee || R.cake !== O.cake) UI.flash.add('r' + i); });
   const fresh = N.log.slice(prev.log.length), kinds = new Set(fresh.map(l => l.kind));
   Sound(kinds.has('end') ? (N.lost ? 'lose' : 'win') : kinds.has('season') ? 'season' : kinds.has('police') ? 'police' : kinds.has('kill') ? 'kill' : kinds.has('bury') ? 'bury' : kinds.has('round') ? 'round' : kinds.has('money') ? 'coin' : 'card');
   if (!human && !UI.auto && m.t !== 'lodge' && prev.pending && prev.pending.t !== 'lodge') aiAnnounce(prev.pending.p, fresh.filter(l => l.p === prev.pending.p));
@@ -2036,8 +2828,8 @@ const ordinal = n => n + (['th', 'st', 'nd', 'rd'][n % 100 > 10 && n % 100 < 14 
 // ---------- interaction ----------
 function startSel(sel) { UI.sel = sel; if (sel.pay === undefined && ['bribe', 'kill', 'build', 'bury'].includes(sel.mode)) sel.pay = Engine.suggestPay(UI.S, actor(UI.S), selMove()) || []; renderGame(); }
 function repay() { const sel = UI.sel; sel.pay = Engine.suggestPay(UI.S, actor(UI.S), selMove()) || sel.pay.slice(0, selCost()); }
-function defaultDest(used) {
-  const S = UI.S, p = actor(S), t = Engine.annexTargets(S, used);
+function defaultDest(used, id) {
+  const S = UI.S, p = actor(S), t = Engine.annexTargets(S, used, id, p);
   return t.filter(a => a.p === p && a.i > 0).sort((a, b) => b.free - a.free)[0] || t.find(a => a.p === p) || t[0] || null;
 }
 function onRoom(i) {
@@ -2074,7 +2866,7 @@ function onHand(id) {
     else { sel.pay.push(id); if (sel.pay.length > need) sel.pay.shift(); }
     return renderGame();
   }
-  if (Engine.options(S, pd.p).build.includes(id)) return startSel({mode: 'build', card: id});
+  if (Engine.options(S, pd.p).build.includes(id)) return startSel({mode: 'build', card: id, objs: []});
   showCard(id);
 }
 function onCorpse(id) {
@@ -2083,13 +2875,13 @@ function onCorpse(id) {
   if (sel && sel.mode === 'bury') {
     if (!Engine.count(S.players[S.pending.p], 'crypt')) return;
     if (sel.items.some(it => it.id === id)) { sel.items = sel.items.filter(it => it.id !== id); if (!sel.items.length) UI.sel = null; else repay(); return renderGame(); }
-    const d = defaultDest(sel.items);
+    const d = defaultDest(sel.items, id);
     if (!d) return toast('No free annex left');
     sel.items.push({id, owner: d.p, annex: d.i}); repay(); return renderGame();
   }
   if (!tgtCorpse(id)) return showCard(id, true);
-  const d = defaultDest([]);
-  startSel({mode: 'bury', items: [{id, owner: d ? d.p : undefined, annex: d ? d.i : undefined}]});
+  const d = defaultDest([], id);
+  startSel({mode: 'bury', items: [{id, owner: d ? d.p : undefined, annex: d ? d.i : undefined}], objs: []});
 }
 function onAnnex(q, i) {
   const S = UI.S, sel = UI.sel;
@@ -2099,7 +2891,8 @@ function onAnnex(q, i) {
   }
   const a = S.players[q].annexes[i];
   modal({title: a.id === 'barn' ? `${pname(q)}\u2019s barn` : `${pname(q)}\u2019s ${T(a.id).annex}`, body: `<div class="cardpop">${a.id === 'barn' ? barnSVG() : cardSVG(a.id)}<div>
-    <p>${a.id === 'barn' ? 'The player aid is a rank-1 annex: one corpse can be buried under it.' : esc(T(a.id).text)}</p><p>Capacity ${Engine.annexRank(a)}: ${a.under.length ? a.under.map(id => `${esc(T(id).name)} (${T(id).money}F)`).join(', ') : 'nothing buried yet'}.</p>
+    <p>${a.id === 'barn' ? 'The player aid is a rank-1 annex: one corpse can be buried under it.' : esc(T(a.id).text)}</p><p>Capacity ${Engine.annexRank(a)}: ${a.under.length ? a.under.map(id => Engine.isFiller(id) ? 'a face-down card (second twin)' : `${esc(T(id).name)} (${T(id).money}F)`).join(', ') : 'nothing buried yet'}.</p>
+    ${a.inn ? `<p>${ICON.trailer} This trailer stands in the inn and takes a traveler at every welcome. Bury a corpse under it while it is empty to bring it back to ${esc(pname(q))}\u2019s area.</p>` : ''}
     <p class="muted">Anyone may bury under any annex. Burying under another player\u2019s annex splits the money in half.</p></div></div>`});
 }
 function onBistro() {
@@ -2110,13 +2903,24 @@ function onBistro() {
 function onOpt(o) {
   const S = UI.S, sel = UI.sel, pd = S.pending, p = pd && pd.p;
   if (o === 'cancel') { UI.sel = null; return renderGame(); }
+  if (o.startsWith('draft:')) return commit({t: 'draft', id: o.slice(6)}, true);
+  if (o === 'objdone') return commit({t: 'obj', play: null}, true);
+  if (o.startsWith('objpick:')) { UI.sel = {mode: 'obj', id: o.slice(8)}; return renderGame(); }
+  if (o.startsWith('objp:')) { const pl = Engine.objOptions(S, p, pd.when)[+o.slice(5)]; if (pl) commit({t: 'obj', play: pl}, true); return; }
+  if (o.startsWith('study:')) return commit({t: 'study', yes: o === 'study:1'}, true);
+  if (o === 'wheel') { UI.sel = {mode: 'build', room: sel.room, objs: ['wheelbarrow'], pay: []}; repay(); return renderGame(); }
+  if (o.startsWith('tog:')) {
+    const ob = o.slice(4), cur = sel.objs || [];
+    sel.objs = cur.includes(ob) ? cur.filter(x => x !== ob) : [...cur, ob];
+    repay(); return renderGame();
+  }
   if (o === 'autolodge') { let g = 0; let X = UI.S; const prev = X; X = structuredClone(X); while (X.pending && X.pending.t === 'lodge' && X.pending.p === p && g++ < 12) Engine.apply(X, AI.minor(X)); UI.S = prev; return commitState(X); }
   if (o === 'pass') return startSel({mode: 'pass', k: 0});
   if (o === 'k+') { sel.k = (sel.k || 0) + 1; return renderGame(); }
   if (o === 'k-') { sel.k = (sel.k || 0) - 1; return renderGame(); }
   if (o === 'bribe' || o === 'kill') {
     const multi = Engine.count(S.players[p], o === 'bribe' ? 'store' : 'butcher') > 0;
-    UI.sel = {mode: o, rooms: [sel.room], multi}; repay(); return renderGame();
+    UI.sel = {mode: o, rooms: [sel.room], multi, objs: []}; repay(); return renderGame();
   }
   if (o.startsWith('peas:')) return commit({t: 'peasants', n: +o.slice(5), pay: []}, true);
   if (o === 'killpeas') return commit({t: 'killPeasant', pay: []}, true);
@@ -2133,12 +2937,28 @@ function commitState(X) {
   Sound('card'); save(); renderGame(); next();
 }
 function showCard(id, dead) {
-  const t = T(id), apt = APTITUDE[t.color];
+  const t = T(id), apt = Engine.apt(id), sp = Engine.special(id);
+  const kind = t.module === 'notables' ? 'Notable' : COLOR_NAMES[t.color][0].toUpperCase() + COLOR_NAMES[t.color].slice(1);
+  const noAnnex = t.color === 'grey' ? 'Police cannot become annexes. A policeman in a room at the end of the round starts an investigation.'
+    : t.color === 'yellow' ? 'Peasants cannot become annexes and always return to the bistro.' : sp ? esc(t.text) : 'This carnie has no annex.';
   modal({title: t.name, body: `<div class="cardpop"><div class="flip">${cardSVG(id, {dead: !!dead})}${cardSVG(id, {dead: !dead})}</div><div>
-    <p><b>${COLOR_NAMES[t.color][0].toUpperCase() + COLOR_NAMES[t.color].slice(1)}</b>, rank ${t.rank}, ${t.money}F in his pockets.</p>
+    <p><b>${kind}</b>, ${rankText(t)}, ${t.money}F in his pockets.</p>
     <p>${apt ? `Aptitude: <b>${ICON[apt]} ${ACTION_NAMES[apt]}</b> (returns to hand when used to pay for it).` : 'No aptitude: always leaves when used to pay.'}</p>
-    ${t.annex ? `<p>Annex: <b>${esc(t.annex)}</b> (rank ${t.rank}): ${esc(t.text)}</p>` : `<p>${t.color === 'grey' ? 'Police cannot become annexes. A policeman in a room at the end of the round starts an investigation.' : 'Peasants cannot become annexes and always return to the bistro.'}</p>`}
-    <p class="muted">Bribe or kill: ${plural(t.rank, 'accomplice')}. Bury: ${plural(t.rank, 'accomplice')}, holding ${t.money}F.</p></div></div>`});
+    ${t.annex ? `<p>Annex: <b>${esc(t.annex)}</b> (holds ${plural(t.brank, 'corpse')}): ${esc(t.text)}</p>` : `<p>${noAnnex}</p>`}
+    <p class="muted">Bribe or kill: ${plural(t.rank, 'accomplice')} (top rank). ${t.annex ? `Build: ${plural(t.brank, 'accomplice')}. ` : ''}Bury: ${plural(t.brank, 'accomplice')} (bottom rank), holding ${t.money}F.</p></div></div>`});
+}
+function showObject(id) {
+  const o = OBJECTS[id];
+  modal({title: o.name, body: `<div class="cardpop">${objSVG(id)}<div><p>${esc(o.text)}</p><p><b>${esc(OBJ_WHEN[o.when])}.</b> Cost at setup: ${o.cost}F. Played once, then it goes back to the box; it is not an action.</p>
+    <p class="muted">${['bribe', 'build', 'kill', 'bury'].includes(o.when) ? 'Switch it on in the action panel while you pay for that action.' : 'The game offers it to you at the right moment.'}</p></div></div>`});
+}
+function showEvent() {
+  const S = UI.S, ev = S.ev;
+  if (!ev) return;
+  const cur = ev.cur ? EVENTS[ev.cur] : null;
+  modal({title: cur ? `Event: ${cur.name}` : 'Events', body: `<div class="cardpop">${cur ? eventSVG(ev.cur) : ''}<div>
+    ${cur ? `<p>${esc(cur.text)}</p><p><b>${evLiveNow(S) ? 'A carnie is in the inn: it will take effect unless every carnie leaves before the end of the round.' : 'No carnie is in the inn right now: it will be discarded unless one is there at the end of the round.'}</b></p>` : '<p>No event this round yet.</p>'}
+    <p class="muted">The first carnie lodged in a round reveals the top event card. It takes effect at the end of the round only if a carnie is still in a room or trailer; then it is discarded. ${ev.deck.length} left in the deck, ${ev.discard.length} discarded.</p></div></div>`});
 }
 function showPlayer(p) {
   const S = UI.S, P = S.players[p];
@@ -2149,7 +2969,7 @@ function showPlayer(p) {
 }
 function showExit() {
   const S = UI.S, ec = exitCounts(S);
-  modal({title: `Exit Stack (${S.exit.length})`, body: `<p>${['blue', 'red', 'purple', 'green', 'grey'].map(c => `<span class="chip" style="--c:${COL_HEX[c]}">${COLOR_NAMES[c]} ${ec[c] || 0}</span>`).join(' ')}</p>
+  modal({title: `Exit Stack (${S.exit.length})`, body: `<p>${EXIT_COLS.filter(c => c !== 'orange' || Engine.mods(S).carnies).map(c => `<span class="chip" style="--c:${COL_HEX[c]}">${COLOR_NAMES[c]} ${ec[c] || 0}</span>`).join(' ')}</p>
     <p class="muted">Travelers who left the inn alive and accomplices spent on actions. ${S.season === 1 ? 'When the Entrance Stack runs out, this stack is shuffled into the new one.' : 'At the end of the game the Park, Grocery, Bishopric and Stables pay 4F per card of their colour here.'}</p>
     <div class="cards popcards">${S.exit.slice().sort((a, b) => COLORS.indexOf(T(a).color) - COLORS.indexOf(T(b).color) || T(a).rank - T(b).rank).map(id => cardSVG(id)).join('')}</div>`, cls: 'wide'});
 }
@@ -2159,6 +2979,7 @@ function showEntrance() {
     <p>${S.season === 1 ? 'First season: when it runs out, the Exit Stack is shuffled into a new Entrance Stack.' : 'Second season: when it runs out, that round is the last one.'}</p><p class="muted">${S.removed.length} cards were set aside unseen at setup.</p></div></div>`});
 }
 function showExplain(k) {
+  if (k === 'event') return showEvent();
   if (k === 'police') return modal({title: 'The police', body: `<p>If at least one policeman (grey) is still in a room of the inn at the end of the round, the police investigate: each player pays the village gravedigger 10F per unburied corpse (checks accepted), and those corpses are discarded.</p><p>Kill a policeman or bribe him to send the police away, or bury your corpses before the end of the round.</p>`});
   const S = UI.S;
   modal({title: `Round ${S.round}`, body: `<p>Season ${S.season} of 2${S.final ? ', <b>final round</b>' : ''}. ${S.entrance.length} cards are left in the Entrance Stack and ${S.exit.length} in the Exit Stack.</p>
@@ -2192,6 +3013,7 @@ document.addEventListener('click', e => {
     case 'dest': return onAnnex(+el.dataset.p, +el.dataset.i);
     case 'undo': return undo();
     case 'player': return showPlayer(+el.dataset.p);
+    case 'object': return showObject(el.dataset.id);
     case 'explain': return showExplain(el.dataset.k);
     case 'results': return showResult();
     case 'newgame': return landing();
@@ -2244,7 +3066,12 @@ function showHelp() {
     <p><b>Paying</b>: an action costs as many cards from your hand as the target\u2019s rank. Cards whose aptitude matches the action come back to hand (merchants ${ICON.bribe}, artisans ${ICON.build}, police ${ICON.kill}, religious ${ICON.bury}); peasants go back to the bistro; the others leave by the Exit Stack.</p>
     <p><b>End of round</b>: if a policeman is still in the inn, every unburied corpse costs 10F. Then you earn 1F per occupied room of your colour, the guests leave, and you pay 1F wages per card in hand (no checks; unpaid accomplices leave).</p>
     <p><b>End of the game</b>: when the Entrance Stack runs out the first time, the Exit Stack becomes the new one (second season). The second time, that round is the last. Unburied corpses cost 10F, end-of-game annexes score, and the tie-break is the most corpses under your own annexes.</p>
-    <p class="muted">Undo works until a new traveler is drawn. Hands are public, like at the table.</p>
+    <details class="exp"><summary><b>The Carnies expansion</b> (modules on the start screen)</summary>
+    <p><b>Two ranks.</b> Expansion cards show a rank on the pillow (in a room: the cost to bribe or kill, Room Service, Coffee, Cake) and a rank on the house (everywhere else: the cost to build or bury, and how many corpses the annex holds).</p>
+    <p><b>Notables</b> replace the nobles. <b>Carnies</b> (orange) join the deck: the Actress, Strongman, Fortune Teller and Knife Thrower each have an aptitude; trailers are annexes that stand in the inn with your Key and must take a traveler at every welcome, earning like your rooms (bury a corpse under an empty trailer to bring it home); the Dwarf fits under any annex, the Twins need 2 places, the Bearded Lady must go under a rival\u2019s annex.</p>
+    <p><b>Events</b>: the first carnie lodged in a round reveals an event. It takes effect at the end of the round only if a carnie is still in the inn, so bribing or killing the last carnie cancels it.</p>
+    <p><b>Aunt Ginette\u2019s objects</b>: draft 3 secret objects at the start (start cash is 10F minus their cost). Each is played once and is not an action: switch action objects on while paying; the others are offered after the welcome, before the gravedigger, or at the end of a round.</p></details>
+    <p class="muted">Undo works until a new traveler is drawn. Hands are public, like at the table; objects are secret.</p>
     <p><a href="${RULES_URL}" target="_blank" rel="noopener">The Bloody Inn on BoardGameGeek (official rules in the files section)</a></p>`});
 }
 
@@ -2330,7 +3157,10 @@ function showStats() {
 
 // ---------- landing ----------
 const AI_NAMES = ['Anna', 'Madeline', 'Sebastien', 'Noelie', 'Laureline', 'Mae', 'Keo'];
-function defaultSetup() { return {n: 4, opp: 'normal', long: true, unlimited: false, fcfs: false, names: ['You', 'Anna', 'Madeline', 'Sebastien'], custom: null}; }
+function defaultSetup() { return {n: 4, opp: 'normal', long: true, unlimited: false, fcfs: false, names: ['You', 'Anna', 'Madeline', 'Sebastien'], custom: null, mods: {}}; }
+const MOD_LIST = [['notables', 'Notables', 'replace the nobles: Wine Cask, Silk Farm, Laboratory, Study, Pharmacy, Safe'],
+  ['carnies', 'Carnies', 'trailers, the Dwarf, the Twins, the Bearded Lady and more'], ['events', 'Events', 'needs the Carnies'],
+  ['objects', 'Aunt Ginette\u2019s objects', 'draft 3 secret one-shot tricks'], ['check50', '50F checks', 'show five checks as one 50F check']];
 function seatsFor(o) {
   if (o.custom && o.custom.length === o.n) return o.custom.map(s => ({...s}));
   return Array.from({length: o.n}, (_, i) => o.opp === 'pnp' ? {name: `Player ${i + 1}`, type: 'human', level: 'normal'}
@@ -2355,6 +3185,8 @@ function landing() {
     <div class="field"><label>Game</label>${seg('long', [[true, 'Long game'], [false, 'Short game']])}</div>
     <div class="field"><label class="check"><input type="checkbox" id="o-unl" ${o.unlimited ? 'checked' : ''}> Unlimited Wealth (more than 40F becomes checks)</label>
       <label class="check"><input type="checkbox" id="o-fcfs" ${o.fcfs ? 'checked' : ''}> First Come, First Served (travelers fill rooms in order)</label></div>
+    <details class="field mods" ${Object.values(o.mods || {}).some(Boolean) ? 'open' : ''}><summary>The Carnies expansion${Object.values(o.mods || {}).some(Boolean) ? ` <small>${MOD_LIST.filter(([k]) => o.mods[k]).map(([, l]) => l).join(', ')}</small>` : ''}</summary>
+      ${MOD_LIST.map(([k, l, d]) => `<label class="check"><input type="checkbox" data-mod="${k}" ${o.mods && o.mods[k] ? 'checked' : ''} ${k === 'events' && !(o.mods && o.mods.carnies) ? 'disabled' : ''}> <b>${l}</b> <small class="muted">${d}</small></label>`).join('')}</details>
     <div class="row"><button class="primary" id="go">New game</button>${canCont ? '<button id="cont">Continue</button>' : ''}</div>
     <div class="row" style="margin-top:8px"><button id="howto">How to play</button><button id="tourbtn">\u{1F9ED} Guided tour</button><button id="stats">Statistics</button></div>
     ${store.get('tourDone', false) ? '' : '<p class="tourhint">New here? Try the <b>Guided tour</b>: a short practice game with tips on the real board.</p>'}
@@ -2372,6 +3204,11 @@ function landing() {
   });
   $('#o-unl').onchange = e => { o.unlimited = e.target.checked; store.set('setup', o); };
   $('#o-fcfs').onchange = e => { o.fcfs = e.target.checked; store.set('setup', o); };
+  $$('[data-mod]').forEach(inp => inp.onchange = () => {
+    o.mods = {...(o.mods || {}), [inp.dataset.mod]: inp.checked};
+    if (!o.mods.carnies) o.mods.events = false;
+    store.set('setup', o); landing();
+  });
   $('#go').onclick = () => startGame(o);
   if (canCont) $('#cont').onclick = () => { UI.S = sv.S; UI.viewer = sv.viewer || 0; UI.seasonSnap = sv.seasonSnap || null; UI.undo = []; UI.gen++; UI.hold = false; UI.sel = null; renderGame(); next(); };
   $('#tourbtn').onclick = tourStart;
@@ -2379,7 +3216,7 @@ function landing() {
 }
 function startGame(o, seed) {
   const seats = seatsFor(o);
-  UI.S = Engine.newGame({seed: seed ?? (Q.has('seed') ? +Q.get('seed') : undefined), long: o.long, unlimited: o.unlimited, fcfs: o.fcfs, seats});
+  UI.S = Engine.newGame({seed: seed ?? (Q.has('seed') ? +Q.get('seed') : undefined), long: o.long, unlimited: o.unlimited, fcfs: o.fcfs, seats, mods: o.mods || {}});
   UI.undo = []; UI.gen++; UI.sel = null; UI.tab = 'players'; UI.hold = false; UI.kcur = null; UI.practice = false;
   UI.seasonSnap = snap(UI.S);
   UI.viewer = humans()[0] ?? 0;
@@ -2401,20 +3238,22 @@ function previewHTML(el) {
   if (a === 'room') {
     const i = +el.dataset.i, R = S.rooms[i]; if (!R.guest) return '';
     const t = T(R.guest);
-    let h = `<b>${esc(t.name)}</b> <span class="muted">room ${i + 1} \u00B7 rank ${t.rank} \u00B7 ${t.money}F${APTITUDE[t.color] ? ` \u00B7 ${ICON[APTITUDE[t.color]]}` : ''}</span>${t.annex ? `<div class="muted">${esc(t.annex)}: ${esc(SHORT[t.effect])}</div>` : ''}`;
-    if (turn) h += costLine({t: 'bribe', rooms: [i]}, `${ICON.bribe} Bribe`) + costLine({t: 'kill', rooms: [i]}, `${ICON.kill} Kill`);
+    const ap = Engine.apt(R.guest);
+    let h = `<b>${esc(t.name)}</b> <span class="muted">${esc(Engine.roomName(S, i))} \u00B7 ${rankText(t)} \u00B7 ${t.money}F${ap ? ` \u00B7 ${ICON[ap]}` : ''}</span>${t.annex ? `<div class="muted">${esc(t.annex)}: ${esc(SHORT[t.effect])}</div>` : ''}`;
+    if (R.coffee != null) h += `<div class="muted">${ICON.coffee} Had his coffee: cannot be bribed or killed this round.</div>`;
+    else if (turn) h += costLine({t: 'bribe', rooms: [i]}, `${ICON.bribe} Bribe`) + costLine({t: 'kill', rooms: [i]}, `${ICON.kill} Kill`);
     return h;
   }
   if (a === 'hand') {
-    const id = el.dataset.id, t = T(id);
-    let h = `<b>${esc(t.name)}</b> <span class="muted">rank ${t.rank}${APTITUDE[t.color] ? ` \u00B7 aptitude ${ICON[APTITUDE[t.color]]}` : ''}</span>${t.annex ? `<div class="muted">${esc(t.annex)}: ${esc(t.text)}</div>` : ''}`;
+    const id = el.dataset.id, t = T(id), ap = Engine.apt(id);
+    let h = `<b>${esc(t.name)}</b> <span class="muted">${rankText(t)}${ap ? ` \u00B7 aptitude ${ICON[ap]}` : ''}</span>${t.annex ? `<div class="muted">${esc(t.annex)}: ${esc(t.text)}</div>` : ''}`;
     if (turn && t.annex) h += costLine({t: 'build', card: id}, `${ICON.build} Build`);
     return h;
   }
   if (a === 'corpse') {
     const id = el.dataset.id, t = T(id);
-    let h = `<b>Corpse: ${esc(t.name)}</b> <span class="muted">rank ${t.rank} \u00B7 ${t.money}F in his pockets</span>`;
-    if (turn) { const d = defaultDest([]); if (d) h += costLine({t: 'bury', items: [{id, owner: d.p, annex: d.i}]}, `${ICON.bury} Bury under ${annexName(d.p, d.i)}`); else h += '<div class="bad">No free annex anywhere.</div>'; }
+    let h = `<b>Corpse: ${esc(t.name)}</b> <span class="muted">bury for ${plural(t.brank, 'card')} \u00B7 ${t.money}F in his pockets</span>`;
+    if (turn) { const d = defaultDest([], id); if (d) h += costLine({t: 'bury', items: [{id, owner: d.p, annex: d.i}]}, `${ICON.bury} Bury under ${annexName(d.p, d.i)}`); else h += '<div class="bad">No free annex anywhere.</div>'; }
     return h;
   }
   return '';
@@ -2605,6 +3444,12 @@ function runTests() {
   document.title = `TESTS ${pass}/${res.length}`;
   $('#app').innerHTML = `<div class="testlist"><h2>TESTS ${pass}/${res.length}</h2><p>${pass} passed, ${res.length - pass} failed</p>${res.map(x => `<div class="${x.ok ? 'p' : 'f'}">${x.ok ? '\u2713' : '\u2717'} ${esc(x.name)}${x.ok ? '' : '\n   ' + esc(x.msg)}</div>`).join('')}</div>`;
 }
+// ?mods=all or ?mods=notables,carnies,events,objects,check50
+function queryMods() {
+  const v = Q.get('mods'); if (!v) return {};
+  const keys = v === 'all' ? ['notables', 'carnies', 'events', 'objects', 'check50'] : v.split(',');
+  return Object.fromEntries(keys.map(k => [k, true]));
+}
 function selfplaySeats() {
   const sv = Q.get('seats') || '4', levels = (Q.get('levels') || 'normal').split(',');
   const n = sv === 'solo' ? 1 : +sv;
@@ -2616,7 +3461,7 @@ function runSelfplay() {
   UI.auto = true;
   try {
     for (let g = 0; g < games; g++) {
-      UI.S = Engine.newGame({seed: seed0 + g, long, seats: selfplaySeats(), unlimited: Q.get('unlimited') === '1', fcfs: Q.get('fcfs') === '1'}); UI.undo = []; UI.viewer = 0;
+      UI.S = Engine.newGame({seed: seed0 + g, long, seats: selfplaySeats(), unlimited: Q.get('unlimited') === '1', fcfs: Q.get('fcfs') === '1', mods: queryMods()}); UI.undo = []; UI.viewer = 0;
       let k = 0;
       while (!UI.S.over) {
         if (++k > 6000) throw new Error('stalled at seed ' + (seed0 + g));
@@ -2640,7 +3485,7 @@ function runSelfplay() {
   }
 }
 function runFreeze() {
-  const o = {...defaultSetup(), n: Q.get('seats') === 'solo' ? 1 : +(Q.get('seats') || 4), opp: Q.get('opp') || 'normal', long: Q.get('short') !== '1'};
+  const o = {...defaultSetup(), n: Q.get('seats') === 'solo' ? 1 : +(Q.get('seats') || 4), opp: Q.get('opp') || 'normal', long: Q.get('short') !== '1', mods: queryMods()};
   startGame(o, +(Q.get('seed') || 7));
   clearTimeout(UI.timer);
   const turns = +(Q.get('turns') || 0);
@@ -2662,6 +3507,9 @@ function runFreeze() {
   if (pop === 'result' && S.over) showResult();
   if (pop === 'share' && S.over) showShare();
   if (pop === 'exit') showExit();
+  if (pop === 'event') showEvent();
+  if (pop === 'object' && S.players[viewer()].objects.length) showObject(S.players[viewer()].objects[0]);
+  if (pop === 'objpick' && myTurn() && S.pending.t === 'objects') { const pl = Engine.objOptions(S, myP, S.pending.when); const multi = pl.find(x => pl.filter(y => y.id === x.id).length > 1); if (multi) onOpt('objpick:' + multi.id); }
   if (pop === 'board') showBoard();
   if (pop === 'player') showPlayer(1);
   if (pop === 'card') { const i = S.rooms.findIndex(R => R.guest); if (i >= 0) showCard(S.rooms[i].guest); }
@@ -2679,6 +3527,8 @@ function runFreeze() {
 // ?uitest: play whole games through DOM clicks only; each human move must equal the engine applying the same move.
 async function runUiTest() {
   const wait = ms => new Promise(r => setTimeout(r, ms));
+  const sortKeys = x => Array.isArray(x) ? x.map(sortKeys) : x && typeof x === 'object' ? Object.fromEntries(Object.keys(x).sort().map(k => [k, sortKeys(x[k])])) : x;
+  const canon = x => JSON.stringify(sortKeys(x));
   let clicks = 0, moves = 0, last = '';
   const click = (el, what) => { if (!el) throw new Error('missing ' + what); el.dispatchEvent(new MouseEvent('click', {bubbles: true})); clicks++; };
   const room = i => $(`.room[data-i="${i}"]`), hand = id => $(`.tableau [data-a="hand"][data-id="${id}"]`), opt = o => $(`.prompt [data-o="${o}"]`);
@@ -2686,8 +3536,17 @@ async function runUiTest() {
     for (const id of UI.sel.pay.filter(x => !want.includes(x))) click(hand(id), 'pay card ' + id);
     for (const id of want.filter(x => !UI.sel.pay.includes(x))) click(hand(id), 'pay card ' + id);
   };
+  const toggles = m => { for (const o of (m.objs || []).filter(o => o !== 'wheelbarrow')) click(opt('tog:' + o), 'object ' + o); };
   async function play(m) {
     switch (m.t) {
+      case 'draft': return click(opt('draft:' + m.id), 'draft ' + m.id);
+      case 'study': return click(opt('study:' + (m.yes ? 1 : 0)), 'study');
+      case 'obj': {
+        if (!m.play) return click(opt('objdone'), 'carry on');
+        const plays = Engine.objOptions(UI.S, UI.S.pending.p, UI.S.pending.when), k = plays.findIndex(pl => JSON.stringify(pl) === JSON.stringify(m.play));
+        if (!opt('objp:' + k)) click(opt('objpick:' + m.play.id), 'object ' + m.play.id);
+        return click(opt('objp:' + k), 'object play');
+      }
       case 'lodge': case 'rs': case 'monk': return click(room(m.room), 'room ' + m.room);
       case 'grave': return click(opt('grave:' + m.checks), 'grave option');
       case 'release':
@@ -2703,14 +3562,17 @@ async function runUiTest() {
       case 'bribe': case 'kill':
         click(room(m.rooms[0]), 'room'); click(opt(m.t), m.t);
         for (const r of m.rooms.slice(1)) click(room(r), 'extra room');
-        fixPay(m.pay); return click(opt('confirm'), 'confirm');
-      case 'build': click(hand(m.card), 'build card'); fixPay(m.pay); return click(opt('confirm'), 'confirm');
+        toggles(m); fixPay(m.pay); return click(opt('confirm'), 'confirm');
+      case 'build':
+        if (m.room != null) { click(room(m.room), 'room'); click(opt('wheel'), 'wheelbarrow'); }
+        else click(hand(m.card), 'build card');
+        toggles(m); fixPay(m.pay); return click(opt('confirm'), 'confirm');
       case 'bury':
         m.items.forEach((it, k) => {
           click($(`.tableau [data-a="corpse"][data-id="${it.id}"]`), 'corpse');
           if (k === 0 || UI.sel.items.length === k + 1) click($(`.prompt [data-a="dest"][data-p="${it.owner}"][data-i="${it.annex}"]`), 'annex ' + it.owner + '/' + it.annex);
         });
-        fixPay(m.pay); return click(opt('confirm'), 'confirm');
+        toggles(m); fixPay(m.pay); return click(opt('confirm'), 'confirm');
     }
     throw new Error('no UI path for ' + m.t);
   }
@@ -2718,7 +3580,7 @@ async function runUiTest() {
   try {
     for (let g = 0; g < +(Q.get('n') || 1); g++) {
       const n = Q.get('seats') === 'solo' ? 1 : +(Q.get('seats') || 3);
-      startGame({...defaultSetup(), n, opp: Q.get('pnp') === '1' ? 'pnp' : 'normal', long: Q.get('short') !== '1'}, +(Q.get('seed') || 2000) + g);
+      startGame({...defaultSetup(), n, opp: Q.get('pnp') === '1' ? 'pnp' : 'normal', long: Q.get('short') !== '1', mods: queryMods()}, +(Q.get('seed') || 2000) + g);
       let guard = 0;
       while (!UI.S.over) {
         if (++guard > 20000) throw new Error('stalled');
@@ -2731,7 +3593,7 @@ async function runUiTest() {
         await play(m);
         if (UI.S.done) want.done = true;
         if (UI.S === before) throw new Error('UI did not commit ' + JSON.stringify(m) + ' sel ' + JSON.stringify(UI.sel));
-        if (JSON.stringify(UI.S) !== JSON.stringify(want)) {
+        if (canon(UI.S) !== canon(want)) {
           const diff = (a, b, path) => {
             if (JSON.stringify(a) === JSON.stringify(b)) return null;
             if (a && b && typeof a === 'object' && typeof b === 'object') for (const k of new Set([...Object.keys(a), ...Object.keys(b)])) { const d = diff(a[k], b[k], path + '.' + k); if (d) return d; }

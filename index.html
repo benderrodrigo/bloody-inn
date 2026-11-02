@@ -107,7 +107,7 @@ details.seats summary { cursor: pointer; color: var(--muted); font-size: 13px; }
 .fl { animation: flash 1.1s; } @keyframes flash { 0%, 40% { box-shadow: 0 0 0 4px #fff3b0, 0 0 22px #ffd24a; } }
 .noanim *, .noanim *::before { animation: none !important; transition: none !important; }
 .mid { display: grid; grid-template-columns: 74px 1fr 74px; gap: 8px; align-items: center; margin: 8px 0; }
-.boardwrap { position: relative; } .boardwrap svg { width: 100%; height: auto; display: block; border-radius: 8px; }
+.boardwrap { position: relative; cursor: zoom-in; } .boardwrap svg { width: 100%; height: auto; display: block; border-radius: 8px; }
 .bigb { position: absolute; right: 4px; top: 4px; padding: 0 6px !important; background: rgba(0, 0, 0, .55) !important; z-index: 1; }
 .board .bistro { cursor: pointer; } .board .bistro.tgt { animation: none; outline: none; box-shadow: none; }
 .stack { position: relative; padding: 4px; display: flex; flex-direction: column; align-items: center; gap: 2px; width: 100%; }
@@ -201,6 +201,7 @@ button.chip { padding: 2px 7px; } .chip small { color: var(--ink); opacity: .8; 
 /* ---------- modal ---------- */
 .backdrop { position: fixed; inset: 0; background: rgba(0, 0, 0, .6); display: flex; align-items: center; justify-content: center; z-index: 50; padding: 12px; }
 .backdrop.docked { background: transparent; justify-content: flex-end; pointer-events: none; } .backdrop.docked .modal { pointer-events: auto; height: 100%; max-height: 100%; }
+.backdrop.peek { inset: var(--top) 370px 0 0; background: rgba(0, 0, 0, .38); z-index: 4; }
 .modal { background: var(--panel); border: 1px solid #5a4330; border-radius: 12px; width: min(560px, 100%); max-height: 90vh; display: flex; flex-direction: column; box-shadow: 0 12px 40px rgba(0, 0, 0, .7); }
 .modal.wide { width: min(860px, 100%); }
 .mh { display: flex; align-items: center; gap: 6px; padding: 10px 12px; border-bottom: 1px solid var(--line); } .mh h2 { flex: 1; font-size: 19px; color: #f3dfb5; }
@@ -208,6 +209,7 @@ button.chip { padding: 2px 7px; } .chip small { color: var(--ink); opacity: .8; 
 .mf { display: flex; flex-wrap: wrap; gap: 6px; padding: 10px 12px; border-top: 1px solid var(--line); }
 .cardpop { display: flex; gap: 14px; align-items: flex-start; } .cardpop .card { width: 150px; flex: none; } .cardpop .flip { display: flex; gap: 6px; } .cardpop .flip .card { width: 120px; }
 @media (max-width: 520px) { .cardpop { flex-direction: column; } .cardpop .flip .card { width: 44vw; } }
+@media (max-width: 759px) { .backdrop.peek { inset: var(--top) 0 56vh 0; align-items: flex-start; padding: 4px; } .backdrop.peek .modal { max-height: 100%; } }
 .popcards .card { width: 76px; flex: none; }
 .sh { font-size: 15px; color: var(--gold); margin: 12px 0 4px; }
 table.res { border-collapse: collapse; width: 100%; font-size: 14px; } table.res td, table.res th { padding: 4px 6px; border-bottom: 1px solid var(--line); text-align: left; }
@@ -396,8 +398,15 @@ const DOORS_TXT = `154,14 325,14 492,14 660,14 156,310 328,310 502,310 672,310`;
 BOARD.doors = DOORS_TXT.split(' ').map(s => { const [x, y] = s.split(',').map(Number); return {x, y}; });
 
 // ===== Rules engine: state in, legal actions and new state out. No DOM access. =====
-const APP_VERSION = '0.2';
+const APP_VERSION = '0.3';
 const CHANGELOG = [
+  {v: '0.3', date: '2026-11-02', items: [
+    'Tap a traveler or corpse to enlarge it while keeping the action panel visible; legal actions are repeated in the card popup.',
+    'Tap anywhere on the Wealth Track board to enlarge it.',
+    'Religious aptitude uses a cross, distinct from the coffin used for Bury.',
+    'Checks are labelled as 10F in wealth displays.',
+    'AI decisions are time-boxed and offer a safe legal recovery after 10 seconds.',
+  ]},
   {v: '0.2', date: '2026-11-01', items: [
     'The Carnies expansion, every module selectable on the start screen.',
     'Notables replace the nobles: Wine Cask, Silk Farm, Laboratory, Study, Pharmacy and Safe.',
@@ -1459,11 +1468,14 @@ const AI = (() => {
     return value(X, p);
   }
 
-  function normal(S) {
+  function normal(S, deadline = Infinity) {
     const p = S.pending.p, cs = candidates(S, p);
     let best = cs[0], bs = -1e9;
-    for (const m of cs) { const s = scoreMove(S, p, m); if (s > bs + 1e-9) { bs = s; best = m; } }
-    return best;
+    for (const m of cs) {
+      if (Date.now() >= deadline) break;
+      const s = scoreMove(S, p, m); if (s > bs + 1e-9) { bs = s; best = m; }
+    }
+    return best || {t: 'pass', launder: 0};
   }
 
   function determinize(S, seed, p) {
@@ -1480,42 +1492,57 @@ const AI = (() => {
     X.players.forEach((P, q) => { if (q !== p) P.objects = []; });
     return X;
   }
-  function playout(X, p, start) {
+  function playout(X, p, start, deadline = Infinity) {
     let g = 0;
-    while (!X.over && X.pending && X.round === start && g++ < 80) {
-      const m = X.pending.t === 'turn' ? normal(X) : minor(X);
+    while (!X.over && X.pending && X.round === start && g++ < 80 && Date.now() < deadline) {
+      const m = X.pending.t === 'turn' ? normal(X, deadline) : minor(X);
       E.apply(X, m);
     }
     return value(X, p);
   }
-  function hard(S) {
+  function hard(S, deadline = Infinity) {
     const p = S.pending.p, cs = candidates(S, p);
     const ranked = cs.map(m => [m, scoreMove(S, p, m)]).sort((a, b) => b[1] - a[1]).slice(0, 8);
-    let best = ranked[0][0], bs = -1e9;
+    let best = ranked.length ? ranked[0][0] : {t: 'pass', launder: 0}, bs = -1e9;
     for (const [m, s0] of ranked) {
+      if (Date.now() >= deadline) break;
       let tot = 0;
       for (let k = 0; k < 2; k++) {
+        if (Date.now() >= deadline) break;
         const X = determinize(S, S.seed * 31 + S.turnNo * 7 + k, p);
         E.apply(X, m); settle(X, p);
-        tot += playout(X, p, S.round);
+        tot += playout(X, p, S.round, deadline);
       }
       const s = tot / 2 + s0 * .25;
       if (s > bs) { bs = s; best = m; }
     }
     return best;
   }
-  function easy(S) {
+  function easy(S, deadline = Infinity) {
     const p = S.pending.p, cs = candidates(S, p);
     const X = {rng: (S.seed ^ (S.turnNo * 2654435761)) >>> 0};
-    const scored = cs.map(m => [m, scoreMove(S, p, m) + (E.rnd(X) - .5) * 12]).sort((a, b) => b[1] - a[1]);
+    const scored = [];
+    for (const m of cs) {
+      if (Date.now() >= deadline) break;
+      scored.push([m, scoreMove(S, p, m) + (E.rnd(X) - .5) * 12]);
+    }
+    scored.sort((a, b) => b[1] - a[1]);
+    if (!scored.length) return {t: 'pass', launder: 0};
     return scored[Math.floor(E.rnd(X) * Math.min(3, scored.length))][0];
   }
 
-  function decide(S, level) {
+  function fallback(S) {
+    if (!S.pending) return null;
+    const m = S.pending.t === 'turn' ? {t: 'pass', launder: 0} : minor(S);
+    return m && !E.check(S, m) ? m : null;
+  }
+  function decide(S, level, maxMs = 9000) {
     if (!S.pending) return null;
     if (S.pending.t !== 'turn') return minor(S);
     level = level || (S.seats[S.pending.p] || {}).level || 'normal';
-    return level === 'hard' ? hard(S) : level === 'easy' ? easy(S) : normal(S);
+    const deadline = Date.now() + Math.max(20, maxMs);
+    const m = level === 'hard' ? hard(S, deadline) : level === 'easy' ? easy(S, deadline) : normal(S, deadline);
+    return m && !E.check(S, m) ? m : fallback(S);
   }
 
   // Non-invasive hint about a rival's likely plan: only what is visible on the table (never their objects).
@@ -1534,7 +1561,7 @@ const AI = (() => {
     return notes;
   }
 
-  return {decide, normal, hard, easy, minor, candidates, value, estimate, intel, roundsLeft};
+  return {decide, fallback, normal, hard, easy, minor, candidates, value, estimate, intel, roundsLeft};
 })();
 
 // ===== Rule tests (?test). Every rules clarification from the owner is a test here. =====
@@ -1800,6 +1827,14 @@ const Tests = (() => {
     const a = JSON.stringify(AI.normal(S)), X = structuredClone(S);
     X.entrance = [X.entrance[0], ...X.entrance.slice(1).reverse()];
     return (a === JSON.stringify(AI.normal(S)) && a === JSON.stringify(AI.normal(X))) || 'differs';
+  });
+  t('AI timeout recovery always supplies a legal safe move', () => {
+    const S = E.newGame({seed: 21, seats: seatsN(2).map(s => ({...s, type: 'ai', level: 'normal'}))});
+    let g = 0;
+    while (S.pending && S.pending.t !== 'turn' && g++ < 20) E.apply(S, AI.minor(S));
+    const m = AI.fallback(S);
+    if (!m) return 'no fallback';
+    return E.check(S, m) || true;
   });
   t('Every AI level finishes a 4-player short game with legal moves', () => {
     for (const level of ['easy', 'normal', 'hard']) {
@@ -2081,7 +2116,7 @@ const store = {
   set(k, v) { try { localStorage.setItem(KEY + k, JSON.stringify(v)); } catch {} },
   del(k) { try { localStorage.removeItem(KEY + k); } catch {} },
 };
-const ICON = {bribe: '\u{1F4B6}', build: '\u{1F528}', kill: '\u{1F52B}', bury: '\u26B0\uFE0F', pass: '\u{1F4A4}', police: '\u{1F46E}', check: '\u{1F9FE}', cash: '\u{1F4B0}', bistro: '\u{1F37A}', key: '\u{1F5DD}\uFE0F', rs: '\u{1F37D}\uFE0F',
+const ICON = {bribe: '\u{1F4B6}', build: '\u{1F528}', kill: '\u{1F52B}', bury: '\u26B0\uFE0F', faith: '\u271D\uFE0F', pass: '\u{1F4A4}', police: '\u{1F46E}', check: '\u{1F9FE}', cash: '\u{1F4B0}', bistro: '\u{1F37A}', key: '\u{1F5DD}\uFE0F', rs: '\u{1F37D}\uFE0F',
   event: '\u{1F3AA}', obj: '\u{1F9F0}', trailer: '\u{1F6FB}', coffee: '\u2615', cake: '\u{1F370}', snow: '\u2744\uFE0F'};
 const COL_HEX = {blue: '#2f5f9e', red: '#a8322b', purple: '#6c3a8c', green: '#3a7347', grey: '#6b6b6b', orange: '#c4651c', yellow: '#c9971c'};
 const EXIT_COLS = ['blue', 'red', 'purple', 'green', 'grey', 'orange'];
@@ -2102,7 +2137,7 @@ const SHORT = {kiosk: '+1F per blue annex', parlor: 'Bribe: 1 accomplice fewer',
 const MENU_ICON = '<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M12 2c3 4 6 7 6 11a6 6 0 0 1-12 0c0-4 3-7 6-11z" fill="#b3161b" stroke="#2a0b0b" stroke-width="1.2"/><path d="M9.5 14a2.5 2.5 0 0 0 2.5 2.5" stroke="#ffb4a8" stroke-width="1.4" fill="none" stroke-linecap="round"/></svg>';
 
 const UI = {
-  S: null, undo: [], sel: null, tab: 'players', viewer: 0, timer: 0, gen: 0, flash: new Set(), deltas: [],
+  S: null, undo: [], sel: null, tab: 'players', viewer: 0, timer: 0, watchdog: 0, aiStuck: null, gen: 0, flash: new Set(), deltas: [],
   sheetMin: matchMedia('(max-width: 759px)').matches,
   mute: store.get('mute', false), anim: store.get('anim', !matchMedia('(prefers-reduced-motion: reduce)').matches),
   art: Q.has('icons') ? false : store.get('art', true), aiSpeed: store.get('aiSpeed', 'normal'),
@@ -2212,7 +2247,7 @@ function aliveSVG(t) {
     <rect x="4" y="4" width="92" height="74" rx="5" fill="url(#gsh)" opacity=".55"/>
     <rect x="4" y="4" width="92" height="17" rx="5" fill="#efe3c4"/>
     <text x="50" y="16.4" font-size="${nm.length > 12 ? 6.4 : nm.length > 9 ? 7.4 : 8.6}" text-anchor="middle" font-weight="700" fill="#2a1d12" class="cfont">${esc(nm)}</text>`;
-  if (apt) s += `<text x="9" y="32" font-size="9">${ICON[apt]}</text><text x="91" y="32" font-size="9" text-anchor="end">${ICON[apt]}</text>`;
+  if (apt) { const ai = apt === 'bury' ? ICON.faith : ICON[apt]; s += `<text x="9" y="32" font-size="9">${ai}</text><text x="91" y="32" font-size="9" text-anchor="end">${ai}</text>`; }
   s += `<path d="M50 28 a11 11 0 1 1 -.1 0 Z M30 78 C30 58 70 58 70 78 Z" fill="rgba(0,0,0,.28)"/>`;
   s += `<circle cx="17" cy="70" r="9.5" fill="#f6efdc" stroke="#1d150c" stroke-width="1.3"/><text x="17" y="74.5" font-size="12" text-anchor="middle" font-weight="800" fill="#1d150c">${t.rank}</text>`;
   s += coinSVG(83, 70, t.money, 9.5);
@@ -2412,7 +2447,7 @@ function innHTML() {
   const exit = `<button class="stack exitst" data-a="exit" title="Exit Stack: ${S.exit.length} cards"><div class="exitbars">${EXIT_COLS.map(c => `<i style="--c:${COL_HEX[c]};--h:${Math.min(100, (ec[c] || 0) * 9)}%"></i>`).join('')}</div><span class="cnt">${S.exit.length}</span><span class="lab">Exit</span></button>`;
   const bistro = `<button class="stack bist ${tgtBistro() ? 'tgt' : ''}" data-a="bistro" title="Bistro: ${S.bistro.length} peasants"><span class="big">${ICON.bistro}</span><span class="cnt">${S.bistro.length}</span><span class="lab">Bistro</span></button>`;
   return `<section class="inn"><div class="rooms rtop">${[0, 1, 2, 3].map(roomHTML).join('')}</div>
-    <div class="mid">${entr}<div class="boardwrap"><button class="ghost bigb" data-a="bigboard" title="Enlarge the board" aria-label="Enlarge the board">\u2922</button>${boardSVG()}</div><div class="stk2">${bistro}${exit}</div></div>
+    <div class="mid">${entr}<div class="boardwrap" data-a="bigboard" title="Tap anywhere to enlarge the Wealth Track board"><button class="ghost bigb" data-a="bigboard" title="Enlarge the board" aria-label="Enlarge the board">\u2922</button>${boardSVG()}</div><div class="stk2">${bistro}${exit}</div></div>
     <div class="rooms rbot">${[4, 5, 6, 7].map(roomHTML).join('')}</div>${carnivalHTML()}</section>`;
 }
 const tuckHTML = id => Engine.isFiller(id) ? `<span class="tuck" title="Face-down card: the second twin">?</span>`
@@ -2445,9 +2480,9 @@ function tableauHTML(p) {
 // 50F checks (optional): five 10F checks shown as one 50F check.
 function checksText(n) {
   if (!n) return '';
-  if (!Engine.mods(UI.S).check50 || n < 5) return `${ICON.check}${n}`;
+  if (!Engine.mods(UI.S).check50 || n < 5) return `${ICON.check}${n}\u00D710F`;
   const f = Math.floor(n / 5), r = n % 5;
-  return `${ICON.check}50\u00D7${f}${r ? ` + ${ICON.check}${r}` : ''}`;
+  return `${ICON.check}${f}\u00D750F${r ? ` + ${ICON.check}${r}\u00D710F` : ''}`;
 }
 function moneyChip(p, big) {
   const P = UI.S.players[p];
@@ -2496,7 +2531,9 @@ function promptHTML() {
   if (!pd) return `<div class="prompt"><div class="ptext">\u2026</div></div>`;
   if (!myTurn()) {
     const p = pd.p;
-    return `<div class="prompt wait" style="--pc:${pcol(p)}"><div class="ptext"><span class="dot"></span><b>${esc(pname(p))}</b> ${isHuman(p) ? 'is up next.' : pd.t === 'lodge' ? 'welcomes the travelers\u2026' : 'is thinking\u2026'}</div><div class="pbtns">${undo}</div></div>`;
+    const rescue = UI.aiStuck && UI.aiStuck.S === S && UI.aiStuck.p === p
+      ? `<button class="primary" data-a="aifallback">Troubleshoot: choose a safe move</button>` : '';
+    return `<div class="prompt wait" style="--pc:${pcol(p)}"><div class="ptext"><span class="dot"></span><b>${esc(pname(p))}</b> ${isHuman(p) ? 'is up next.' : rescue ? 'has taken over 10 seconds.' : pd.t === 'lodge' ? 'welcomes the travelers\u2026' : 'is thinking\u2026'}</div><div class="pbtns">${rescue}${undo}</div></div>`;
   }
   const P = S.players[pd.p], sel = UI.sel;
   const btns = (...b) => `<div class="pbtns">${b.filter(Boolean).join('')}${undo}</div>`;
@@ -2693,10 +2730,10 @@ function debugHTML() {
 }
 
 // ---------- modal ----------
-function modal({title, body, x = true, dock = true, buttons = [], cls = ''}) {
+function modal({title, body, x = true, dock = true, peek = false, buttons = [], cls = ''}) {
   closeModal();
   const b = document.createElement('div');
-  b.className = 'backdrop' + (UI.docked && dock ? ' docked' : '');
+  b.className = 'backdrop' + (peek ? ' peek' : UI.docked && dock ? ' docked' : '');
   b.innerHTML = `<div class="modal ${cls}" role="dialog" aria-label="${esc(title)}"><div class="mh"><h2>${esc(title)}</h2>${dock ? `<button class="ghost" data-m="dock" title="Dock to side">\u21E5</button>` : ''}${x ? `<button class="ghost" data-m="x" aria-label="Close">\u2715</button>` : ''}</div>
     <div class="mb">${body}</div><div class="mf">${buttons.map((bt, i) => `<button class="${bt.cls || ''}" data-m="b${i}" ${bt.disabled ? 'disabled' : ''}>${bt.label}</button>`).join('')}${x ? `<button data-m="x">Close</button>` : ''}</div></div>`;
   b.addEventListener('click', e => {
@@ -2741,7 +2778,7 @@ function commit(m, human) {
 }
 function undo() {
   if (!UI.undo.length) return;
-  clearTimeout(UI.timer); UI.gen++;
+  clearTimeout(UI.timer); clearTimeout(UI.watchdog); UI.aiStuck = null; UI.gen++;
   UI.S = UI.undo.pop(); UI.sel = null; UI.kcur = null; UI.hold = false;
   if (pnp()) UI.viewer = actor(UI.S);
   save(); renderGame(); next();
@@ -2749,7 +2786,7 @@ function undo() {
 // [pause before an AI action, pause before an AI lodging] in ms
 const AI_SPEED = {slow: [1800, 450], normal: [1000, 260], fast: [420, 90]};
 function next() {
-  clearTimeout(UI.timer);
+  clearTimeout(UI.timer); clearTimeout(UI.watchdog); UI.aiStuck = null;
   const S = UI.S, gen = UI.gen;
   if (!S) return;
   if (S.over) { finishGame(); return; }
@@ -2758,12 +2795,33 @@ function next() {
   if (p === null) return;
   if (!isHuman(p)) {
     const D = UI.freeze ? [0, 0] : !UI.anim ? [380, 100] : AI_SPEED[UI.aiSpeed] || AI_SPEED.normal;
+    UI.watchdog = setTimeout(() => {
+      if (gen !== UI.gen || UI.S !== S || actor(UI.S) !== p) return;
+      UI.aiStuck = {S, p}; renderGame();
+    }, 10000);
     UI.timer = setTimeout(() => {
       if (gen !== UI.gen || UI.S !== S) return;
-      commit(AI.decide(UI.S, seat(p).level), false);
+      try {
+        const m = AI.decide(UI.S, seat(p).level, 9000);
+        if (!m || Engine.check(UI.S, m)) throw new Error('No legal AI decision');
+        commit(m, false);
+      } catch (e) {
+        console.error('AI decision failed', e);
+        UI.aiStuck = {S, p}; renderGame();
+      }
     }, S.pending.t === 'lodge' ? D[1] : D[0]);
   } else if (pnp() && UI.viewer !== p) showPass(p);
   else if (S.pending.t === 'release' && !UI.sel) { UI.sel = {mode: 'release', ids: AI.minor(S).ids}; renderGame(); }
+}
+function recoverAI() {
+  const S = UI.S, p = actor(S);
+  if (!S || p === null || isHuman(p)) return;
+  clearTimeout(UI.timer); clearTimeout(UI.watchdog);
+  const m = AI.fallback(S);
+  if (!m) return toast(`No safe move is available for ${pname(p)}.`);
+  UI.aiStuck = null;
+  toast(`Troubleshoot: choosing a safe move for ${pname(p)}.`);
+  commit(m, false);
 }
 function aiAnnounce(p, lines) {
   if (!lines.length || UI.freeze) return;
@@ -2832,10 +2890,15 @@ function defaultDest(used, id) {
   const S = UI.S, p = actor(S), t = Engine.annexTargets(S, used, id, p);
   return t.filter(a => a.p === p && a.i > 0).sort((a, b) => b.free - a.free)[0] || t.find(a => a.p === p) || t[0] || null;
 }
-function onRoom(i) {
+function onRoom(i, cardTap = false) {
   const S = UI.S, R = S.rooms[i];
-  if (!myTurn()) return R.guest ? showCard(R.guest) : null;
   const pd = S.pending, sel = UI.sel;
+  if (cardTap && R.guest) {
+    if (myTurn() && pd.t === 'turn' && !sel && tgtRoom(i)) startSel({mode: 'choose', room: i});
+    showCard(R.guest, false, {room: i});
+    return;
+  }
+  if (!myTurn()) return R.guest ? showCard(R.guest) : null;
   if (pd.t === 'lodge') { if (tgtRoom(i)) commit({t: 'lodge', room: i}, true); return; }
   if (pd.t === 'rs') { if (tgtRoom(i)) commit({t: 'rs', room: i}, true); return; }
   if (pd.t === 'monk') { if (tgtRoom(i)) commit({t: 'monk', room: i}, true); return; }
@@ -2852,36 +2915,33 @@ function onRoom(i) {
 }
 function onHand(id) {
   const S = UI.S, sel = UI.sel;
-  if (!myTurn()) return showCard(id);
+  if (!myTurn()) return showCard(id, false, {hand: true});
   const pd = S.pending;
   if (pd.t === 'release') {
-    sel.ids = sel.ids.includes(id) ? sel.ids.filter(x => x !== id) : [...sel.ids, id].slice(-pd.k);
-    return renderGame();
+    return showCard(id, false, {hand: true});
   }
-  if (pd.t !== 'turn') return showCard(id);
+  if (pd.t !== 'turn') return showCard(id, false, {hand: true});
   if (sel && ['bribe', 'kill', 'build', 'bury'].includes(sel.mode)) {
-    if (id === sel.card) return;
-    const need = selCost();
-    if (sel.pay.includes(id)) sel.pay = sel.pay.filter(x => x !== id);
-    else { sel.pay.push(id); if (sel.pay.length > need) sel.pay.shift(); }
-    return renderGame();
+    return showCard(id, false, {hand: true});
   }
-  if (Engine.options(S, pd.p).build.includes(id)) return startSel({mode: 'build', card: id, objs: []});
-  showCard(id);
+  if (Engine.options(S, pd.p).build.includes(id)) startSel({mode: 'build', card: id, objs: []});
+  showCard(id, false, {hand: true});
 }
 function onCorpse(id) {
   const S = UI.S, sel = UI.sel;
-  if (!myTurn() || S.pending.t !== 'turn') return showCard(id, true);
+  if (!myTurn() || S.pending.t !== 'turn') return showCard(id, true, {corpse: true});
   if (sel && sel.mode === 'bury') {
-    if (!Engine.count(S.players[S.pending.p], 'crypt')) return;
-    if (sel.items.some(it => it.id === id)) { sel.items = sel.items.filter(it => it.id !== id); if (!sel.items.length) UI.sel = null; else repay(); return renderGame(); }
-    const d = defaultDest(sel.items, id);
-    if (!d) return toast('No free annex left');
-    sel.items.push({id, owner: d.p, annex: d.i}); repay(); return renderGame();
+    if (Engine.count(S.players[S.pending.p], 'crypt') && !sel.items.some(it => it.id === id)) {
+      const d = defaultDest(sel.items, id);
+      if (!d) return toast('No free annex left');
+      sel.items.push({id, owner: d.p, annex: d.i}); repay(); renderGame();
+    }
+    return showCard(id, true, {corpse: true});
   }
-  if (!tgtCorpse(id)) return showCard(id, true);
+  if (!tgtCorpse(id)) return showCard(id, true, {corpse: true});
   const d = defaultDest([], id);
   startSel({mode: 'bury', items: [{id, owner: d ? d.p : undefined, annex: d ? d.i : undefined}], objs: []});
+  showCard(id, true, {corpse: true});
 }
 function onAnnex(q, i) {
   const S = UI.S, sel = UI.sel;
@@ -2936,14 +2996,56 @@ function commitState(X) {
   X.rooms.forEach((R, i) => { if (R.guest !== prev.rooms[i].guest) UI.flash.add('r' + i); });
   Sound('card'); save(); renderGame(); next();
 }
-function showCard(id, dead) {
+function popupCardButtons(id, ctx = {}) {
+  const S = UI.S, sel = UI.sel, pd = S && S.pending;
+  if (!S || !pd || !myTurn()) return [];
+  if (ctx.hand && pd.t === 'release' && sel) {
+    const on = sel.ids.includes(id);
+    return [{label: on ? '\u2714 Keep this accomplice' : 'Release this accomplice', cls: on ? '' : 'primary', fn: () => {
+      sel.ids = on ? sel.ids.filter(x => x !== id) : [...sel.ids, id].slice(-pd.k);
+      renderGame();
+    }}];
+  }
+  if (ctx.room != null && pd.t === 'turn' && sel && sel.mode === 'choose' && sel.room === ctx.room) {
+    const o = Engine.options(S, pd.p), cb = Engine.cost(S, pd.p, {t: 'bribe', rooms: [ctx.room]}), ck = Engine.cost(S, pd.p, {t: 'kill', rooms: [ctx.room]});
+    const out = [
+      {label: `${ICON.bribe} Bribe (${plural(cb, 'card')})`, cls: 'primary', disabled: !o.bribe.includes(ctx.room), fn: () => onOpt('bribe')},
+      {label: `${ICON.kill} Kill (${plural(ck, 'card')})`, disabled: !o.kill.includes(ctx.room), fn: () => onOpt('kill')},
+    ];
+    if (o.wheel.includes(ctx.room)) out.push({label: `${ICON.build} Wheelbarrow: build annex`, fn: () => onOpt('wheel')});
+    return out;
+  }
+  if (ctx.hand && pd.t === 'turn' && sel && ['bribe', 'kill', 'build', 'bury'].includes(sel.mode)) {
+    if (id === sel.card || sel.items && sel.items.some(it => it.id === id)) {
+      const m = selMove(), err = m && Engine.check(S, m);
+      return [{label: sel.mode === 'build' ? `${ICON.build} Build this annex` : sel.mode === 'bury' ? `${ICON.bury} Bury this corpse` : 'Confirm action', cls: 'primary', disabled: !m || !!err, fn: () => onOpt('confirm')}];
+    }
+    const on = sel.pay.includes(id);
+    return [{label: on ? '\u2714 Remove from payment' : 'Use as payment', fn: () => {
+      const need = selCost();
+      if (on) sel.pay = sel.pay.filter(x => x !== id);
+      else { sel.pay.push(id); if (sel.pay.length > need) sel.pay.shift(); }
+      renderGame();
+    }}];
+  }
+  if (ctx.corpse && pd.t === 'turn' && sel && sel.mode === 'bury') {
+    const m = selMove(), err = m && Engine.check(S, m);
+    const out = [{label: `${ICON.bury} Bury selected corpse${sel.items.length === 1 ? '' : 's'}`, cls: 'primary', disabled: !m || !!err, fn: () => onOpt('confirm')}];
+    if (Engine.count(S.players[pd.p], 'crypt') && sel.items.some(it => it.id === id)) out.push({label: 'Remove this corpse', fn: () => {
+      sel.items = sel.items.filter(it => it.id !== id); if (!sel.items.length) UI.sel = null; else repay(); renderGame();
+    }});
+    return out;
+  }
+  return [];
+}
+function showCard(id, dead, ctx = {}) {
   const t = T(id), apt = Engine.apt(id), sp = Engine.special(id);
   const kind = t.module === 'notables' ? 'Notable' : COLOR_NAMES[t.color][0].toUpperCase() + COLOR_NAMES[t.color].slice(1);
   const noAnnex = t.color === 'grey' ? 'Police cannot become annexes. A policeman in a room at the end of the round starts an investigation.'
     : t.color === 'yellow' ? 'Peasants cannot become annexes and always return to the bistro.' : sp ? esc(t.text) : 'This carnie has no annex.';
-  modal({title: t.name, body: `<div class="cardpop"><div class="flip">${cardSVG(id, {dead: !!dead})}${cardSVG(id, {dead: !dead})}</div><div>
+  modal({title: t.name, peek: true, buttons: popupCardButtons(id, ctx), body: `<div class="cardpop"><div class="flip">${cardSVG(id, {dead: !!dead})}${cardSVG(id, {dead: !dead})}</div><div>
     <p><b>${kind}</b>, ${rankText(t)}, ${t.money}F in his pockets.</p>
-    <p>${apt ? `Aptitude: <b>${ICON[apt]} ${ACTION_NAMES[apt]}</b> (returns to hand when used to pay for it).` : 'No aptitude: always leaves when used to pay.'}</p>
+    <p>${apt ? `Aptitude: <b>${apt === 'bury' ? ICON.faith : ICON[apt]} ${ACTION_NAMES[apt]}</b> (returns to hand when used to pay for it).` : 'No aptitude: always leaves when used to pay.'}</p>
     ${t.annex ? `<p>Annex: <b>${esc(t.annex)}</b> (holds ${plural(t.brank, 'corpse')}): ${esc(t.text)}</p>` : `<p>${noAnnex}</p>`}
     <p class="muted">Bribe or kill: ${plural(t.rank, 'accomplice')} (top rank). ${t.annex ? `Build: ${plural(t.brank, 'accomplice')}. ` : ''}Bury: ${plural(t.brank, 'accomplice')} (bottom rank), holding ${t.money}F.</p></div></div>`});
 }
@@ -3001,7 +3103,7 @@ document.addEventListener('click', e => {
     case 'mute': UI.mute = !UI.mute; store.set('mute', UI.mute); return renderGame();
     case 'tab': UI.tab = el.dataset.t; UI.sheetMin = false; return renderGame();
     case 'sheet': UI.sheetMin = !UI.sheetMin; return renderGame();
-    case 'room': return onRoom(+el.dataset.i);
+    case 'room': return onRoom(+el.dataset.i, !!e.target.closest('.card'));
     case 'hand': return onHand(el.dataset.id);
     case 'corpse': return onCorpse(el.dataset.id);
     case 'annex': return onAnnex(+el.dataset.p, +el.dataset.i);
@@ -3009,6 +3111,7 @@ document.addEventListener('click', e => {
     case 'entrance': return showEntrance();
     case 'exit': return showExit();
     case 'bigboard': return showBoard();
+    case 'aifallback': return recoverAI();
     case 'opt': return onOpt(el.dataset.o);
     case 'dest': return onAnnex(+el.dataset.p, +el.dataset.i);
     case 'undo': return undo();
@@ -3063,7 +3166,7 @@ function showHelp() {
     <li>${ICON.kill} <b>Kill</b> a guest: he becomes a corpse in front of you.</li>
     <li>${ICON.bury} <b>Bury</b> a corpse under any annex with room (an annex holds as many corpses as its rank; your barn holds 1) and take the money in his pockets, split in half under another player\u2019s annex.</li>
     <li>${ICON.pass} <b>Pass</b>, optionally laundering cash into checks or checks into cash.</li></ul>
-    <p><b>Paying</b>: an action costs as many cards from your hand as the target\u2019s rank. Cards whose aptitude matches the action come back to hand (merchants ${ICON.bribe}, artisans ${ICON.build}, police ${ICON.kill}, religious ${ICON.bury}); peasants go back to the bistro; the others leave by the Exit Stack.</p>
+    <p><b>Paying</b>: an action costs as many cards from your hand as the target\u2019s rank. Cards whose aptitude matches the action come back to hand (merchants ${ICON.bribe}, artisans ${ICON.build}, police ${ICON.kill}, religious ${ICON.faith}); peasants go back to the bistro; the others leave by the Exit Stack.</p>
     <p><b>End of round</b>: if a policeman is still in the inn, every unburied corpse costs 10F. Then you earn 1F per occupied room of your colour, the guests leave, and you pay 1F wages per card in hand (no checks; unpaid accomplices leave).</p>
     <p><b>End of the game</b>: when the Entrance Stack runs out the first time, the Exit Stack becomes the new one (second season). The second time, that round is the last. Unburied corpses cost 10F, end-of-game annexes score, and the tie-break is the most corpses under your own annexes.</p>
     <details class="exp"><summary><b>The Carnies expansion</b> (modules on the start screen)</summary>
@@ -3168,7 +3271,7 @@ function seatsFor(o) {
 }
 function landing() {
   if (UI.tour) tourEnd(false);
-  clearTimeout(UI.timer); UI.gen++; closeModal(); UI.hold = false; UI.practice = false; tipHide();
+  clearTimeout(UI.timer); clearTimeout(UI.watchdog); UI.aiStuck = null; UI.gen++; closeModal(); UI.hold = false; UI.practice = false; tipHide();
   $$('.chcard, .pass, .aiplay').forEach(x => x.remove());
   const o = UI.setup || {...defaultSetup(), ...store.get('setup', {})};
   UI.setup = o;
@@ -3373,7 +3476,7 @@ function showShare() {
 const TOUR = [
   {sel: '.top', t: 'Welcome to the inn', b: 'The top bar shows whose decision it is, the round and how many travelers are left, a police warning when a policeman is in the inn, and everyone\u2019s money: cash (max 40F) plus checks.'},
   {sel: '.inn .rooms', t: 'The rooms', b: 'Each round the first player lodges a traveler in every open room. The key shows who owns the room: you earn 1F per occupied room of your colour when the guests leave. Tap a traveler to see what bribing or killing him costs.'},
-  {sel: '.boardwrap', t: 'Wealth Track and bistro', b: 'The discs on the board show everyone\u2019s cash. Peasants drink at the bistro: bribe one or two for free, or kill one. Tap \u2922 to enlarge the board.'},
+  {sel: '.boardwrap', t: 'Wealth Track and bistro', b: 'The discs on the board show everyone\u2019s cash. Peasants drink at the bistro: bribe one or two for free, or kill one. Tap anywhere on the Wealth Track board to enlarge it.'},
   {sel: '.tableau', t: 'Your hand, annexes and corpses', b: 'Accomplices in your hand pay for actions: a card whose aptitude matches the action comes back. Annexes hold as many corpses as their rank; your barn holds one. Unburied corpses cost 10F each when the police investigate.'},
   {sel: '.side .prompt', sheet: true, t: 'Try it: take an action', b: 'Pick something lit up: a traveler to bribe or kill, a card in your hand to build, or Pass. The panel suggests a payment and previews the money; tap Confirm.', wait: T => UI.S.log.slice(T.log0).some(l => l.p === 0 && ['bribe', 'kill', 'build', 'bury', 'pass'].includes(l.kind))},
   {sel: '.side .panelrest', sheet: true, t: 'Players, Journal and Rival intel', b: 'Players lists everyone\u2019s hand, annexes and corpses (tap a name for details). The Journal tells every move; Rival intel hints at what your rivals are up to.'},
@@ -3381,7 +3484,7 @@ const TOUR = [
 function tourStart() {
   closeModal();
   const back = UI.S && !UI.S.over && !UI.practice ? {S: UI.S, undo: UI.undo, viewer: UI.viewer, tab: UI.tab, seasonSnap: UI.seasonSnap, sheetMin: UI.sheetMin} : null;
-  clearTimeout(UI.timer); UI.gen++;
+  clearTimeout(UI.timer); clearTimeout(UI.watchdog); UI.aiStuck = null; UI.gen++;
   UI.practice = true;
   const seats = [{name: 'You', type: 'human', level: 'normal'}, {name: 'Anna', type: 'ai', level: 'easy'}];
   const S = Engine.newGame({seed: 4242, long: false, seats});
@@ -3512,7 +3615,7 @@ function runFreeze() {
   if (pop === 'objpick' && myTurn() && S.pending.t === 'objects') { const pl = Engine.objOptions(S, myP, S.pending.when); const multi = pl.find(x => pl.filter(y => y.id === x.id).length > 1); if (multi) onOpt('objpick:' + multi.id); }
   if (pop === 'board') showBoard();
   if (pop === 'player') showPlayer(1);
-  if (pop === 'card') { const i = S.rooms.findIndex(R => R.guest); if (i >= 0) showCard(S.rooms[i].guest); }
+  if (pop === 'card') { const i = S.rooms.findIndex((R, k) => R.guest && tgtRoom(k)); if (i >= 0) onRoom(i, true); else { const j = S.rooms.findIndex(R => R.guest); if (j >= 0) showCard(S.rooms[j].guest); } }
   if (pop === 'season') { UI.seasonSnap = snap(S).map(x => ({...x, total: x.total - 12, annexes: Math.max(0, x.annexes - 1)})); showSeason(S); }
   if (pop === 'tour') { UI.freeze = false; tourStart(); UI.freeze = true; clearTimeout(UI.timer); tourGo(+(Q.get('tstep') || 1) - 1); }
   if (pop === 'choose' && myTurn()) { const o2 = Engine.options(S, myP), i = o2.kill.find(x => o2.bribe.includes(x)) ?? o2.bribe[0]; if (i !== undefined) onRoom(i); }

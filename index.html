@@ -96,7 +96,15 @@ details.seats summary { cursor: pointer; color: var(--muted); font-size: 13px; }
 .room .door b { font-family: var(--fc); font-size: 14px; color: #f3dfb5; }
 .keychip, .rschip { display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 18px; border-radius: 4px; background: var(--c); border: 1px solid #000; font-size: 11px; }
 .closed { color: var(--muted); font-size: 11px; } .cop { margin-left: auto; font-size: 15px; animation: copglow 1.6s infinite; border-radius: 50%; }
-.slot { aspect-ratio: 100 / 140; display: flex; }
+.slot { aspect-ratio: 100 / 140; display: flex; border-radius: 8px; }
+.slot.g-no { box-shadow: 0 0 16px 4px rgba(225, 50, 45, .55); }
+.slot.g-cop { box-shadow: 0 0 16px 4px rgba(70, 140, 255, .55); }
+.slot.g-cheap { box-shadow: 0 0 16px 4px rgba(70, 205, 100, .55); }
+.room.g-no { background-image: linear-gradient(rgba(225, 50, 45, .22), rgba(225, 50, 45, .10)); }
+.room.g-cop { background-image: linear-gradient(rgba(70, 140, 255, .22), rgba(70, 140, 255, .10)); }
+.room.g-cheap { background-image: linear-gradient(rgba(70, 205, 100, .22), rgba(70, 205, 100, .10)); }
+.slot.g-cop.g-no { box-shadow: 0 0 10px 2px rgba(70, 140, 255, .5), 0 0 20px 5px rgba(225, 50, 45, .32); }
+.slot.g-cop.g-cheap { box-shadow: 0 0 10px 2px rgba(70, 140, 255, .5), 0 0 20px 5px rgba(70, 205, 100, .32); }
 .slot .card, .hc .card, .annex .card, .stack .card, .pcard .card { width: 100%; height: auto; display: block; }
 .empty { flex: 1; border: 2px dashed #4a372a; border-radius: 8px; display: flex; align-items: center; justify-content: center; color: var(--muted); font-size: 12px; }
 .tgt { outline: 3px solid var(--gold); outline-offset: 1px; box-shadow: 0 0 14px rgba(224, 184, 80, .55); animation: pulse 1.6s infinite; }
@@ -162,6 +170,13 @@ details.mods summary, details.exp summary { cursor: pointer; } details.mods smal
 @media (min-width: 760px) and (max-width: 1099px) { .inn { max-width: 640px; } .tableau { max-width: 640px; } }
 
 /* ---------- prompt ---------- */
+.inspect { padding: 8px 12px 10px; border-bottom: 1px solid var(--line); background: #1d1410; }
+.inspect .ih { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 6px; }
+.inspect .ih button { padding: 2px 9px; }
+.inspect .ib { display: flex; gap: 10px; align-items: flex-start; }
+.inspect .flip { display: flex; gap: 4px; flex: none; } .inspect .flip .card { width: 74px; height: auto; display: block; }
+.inspect .itext { font-size: 12.5px; line-height: 1.35; } .inspect .itext p { margin: 0 0 5px; }
+@media (max-width: 759px) { .inspect .flip .card { width: 62px; } .inspect .itext { font-size: 12px; } }
 .prompt { padding: 10px 12px; border-bottom: 1px solid var(--line); background: linear-gradient(#2a1c15, var(--panel)); display: flex; flex-wrap: wrap; gap: 8px; align-items: flex-start; }
 .prompt .ptext { flex: 1 1 200px; font-size: 14px; } .prompt .ptext small { color: var(--muted); }
 .prompt .pcard { width: 62px; flex: none; }
@@ -201,7 +216,6 @@ button.chip { padding: 2px 7px; } .chip small { color: var(--ink); opacity: .8; 
 /* ---------- modal ---------- */
 .backdrop { position: fixed; inset: 0; background: rgba(0, 0, 0, .6); display: flex; align-items: center; justify-content: center; z-index: 50; padding: 12px; }
 .backdrop.docked { background: transparent; justify-content: flex-end; pointer-events: none; } .backdrop.docked .modal { pointer-events: auto; height: 100%; max-height: 100%; }
-.backdrop.peek { inset: var(--top) 370px 0 0; background: rgba(0, 0, 0, .38); z-index: 4; }
 .modal { background: var(--panel); border: 1px solid #5a4330; border-radius: 12px; width: min(560px, 100%); max-height: 90vh; display: flex; flex-direction: column; box-shadow: 0 12px 40px rgba(0, 0, 0, .7); }
 .modal.wide { width: min(860px, 100%); }
 .mh { display: flex; align-items: center; gap: 6px; padding: 10px 12px; border-bottom: 1px solid var(--line); } .mh h2 { flex: 1; font-size: 19px; color: #f3dfb5; }
@@ -209,7 +223,6 @@ button.chip { padding: 2px 7px; } .chip small { color: var(--ink); opacity: .8; 
 .mf { display: flex; flex-wrap: wrap; gap: 6px; padding: 10px 12px; border-top: 1px solid var(--line); }
 .cardpop { display: flex; gap: 14px; align-items: flex-start; } .cardpop .card { width: 150px; flex: none; } .cardpop .flip { display: flex; gap: 6px; } .cardpop .flip .card { width: 120px; }
 @media (max-width: 520px) { .cardpop { flex-direction: column; } .cardpop .flip .card { width: 44vw; } }
-@media (max-width: 759px) { .backdrop.peek { inset: var(--top) 0 56vh 0; align-items: flex-start; padding: 4px; } .backdrop.peek .modal { max-height: 100%; } }
 .popcards .card { width: 76px; flex: none; }
 .sh { font-size: 15px; color: var(--gold); margin: 12px 0 4px; }
 table.res { border-collapse: collapse; width: 100%; font-size: 14px; } table.res td, table.res th { padding: 4px 6px; border-bottom: 1px solid var(--line); text-align: left; }
@@ -398,8 +411,13 @@ const DOORS_TXT = `154,14 325,14 492,14 660,14 156,310 328,310 502,310 672,310`;
 BOARD.doors = DOORS_TXT.split(' ').map(s => { const [x, y] = s.split(',').map(Number); return {x, y}; });
 
 // ===== Rules engine: state in, legal actions and new state out. No DOM access. =====
-const APP_VERSION = '0.3';
+const APP_VERSION = '0.4';
 const CHANGELOG = [
+  {v: '0.4', date: '2026-11-02', items: [
+    'Card details now open at the top of the side panel instead of a popup, so the inn and the actions stay in view.',
+    'Tapping a different traveler switches the action panel to that traveler.',
+    'Glows in the inn: red for travelers you cannot bribe or kill, blue for police, green where an annex or a matching-aptitude accomplice makes bribing or killing cheaper.',
+  ]},
   {v: '0.3', date: '2026-11-02', items: [
     'Tap a traveler or corpse to enlarge it while keeping the action panel visible; legal actions are repeated in the card popup.',
     'Tap anywhere on the Wealth Track board to enlarge it.',
@@ -2137,7 +2155,7 @@ const SHORT = {kiosk: '+1F per blue annex', parlor: 'Bribe: 1 accomplice fewer',
 const MENU_ICON = '<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M12 2c3 4 6 7 6 11a6 6 0 0 1-12 0c0-4 3-7 6-11z" fill="#b3161b" stroke="#2a0b0b" stroke-width="1.2"/><path d="M9.5 14a2.5 2.5 0 0 0 2.5 2.5" stroke="#ffb4a8" stroke-width="1.4" fill="none" stroke-linecap="round"/></svg>';
 
 const UI = {
-  S: null, undo: [], sel: null, tab: 'players', viewer: 0, timer: 0, watchdog: 0, aiStuck: null, gen: 0, flash: new Set(), deltas: [],
+  S: null, undo: [], sel: null, inspect: null, tab: 'players', viewer: 0, timer: 0, watchdog: 0, aiStuck: null, gen: 0, flash: new Set(), deltas: [],
   sheetMin: matchMedia('(max-width: 759px)').matches,
   mute: store.get('mute', false), anim: store.get('anim', !matchMedia('(prefers-reduced-motion: reduce)').matches),
   art: Q.has('icons') ? false : store.get('art', true), aiSpeed: store.get('aiSpeed', 'normal'),
@@ -2419,6 +2437,22 @@ function tgtBistro() {
 }
 
 // ---------- rendering ----------
+// Card glows for the player at the table: red = cannot bribe or kill, blue = police, green = an annex or aptitude cards make it cheaper.
+function guestGlow(i) {
+  const S = UI.S, R = S.rooms[i];
+  if (!R.guest || !S.pending || S.over) return '';
+  const p = myTurn() ? S.pending.p : viewer(), P = S.players[p];
+  if (!P) return '';
+  const cls = Engine.isPolice(R.guest) ? ['g-cop'] : [];
+  const rank = T(R.guest).rank, hand = P.hand.length, out = [];
+  for (const t of ['bribe', 'kill']) {
+    const c = Engine.cost(S, p, {t, rooms: [i]});
+    out.push({ok: R.coffee == null && c <= hand, cheap: c < rank || (c > 0 && P.hand.some(id => Engine.apt(id) === t))});
+  }
+  if (!out.some(x => x.ok)) cls.push('g-no');
+  else if (out.some(x => x.ok && x.cheap)) cls.push('g-cheap');
+  return cls.join(' ');
+}
 function roomHTML(i) {
   const S = UI.S, R = S.rooms[i], open = R.key !== null, sel = UI.sel;
   const chosen = sel && ((sel.rooms && sel.rooms.includes(i)) || sel.room === i);
@@ -2427,10 +2461,10 @@ function roomHTML(i) {
   const police = R.guest && Engine.isPolice(R.guest) ? `<span class="cop" title="Police: investigation at the end of the round">${ICON.police}</span>` : '';
   const extras = (R.coffee != null ? `<span class="tok" style="--c:${pcol(R.coffee)}" title="Coffee from ${esc(pname(R.coffee))}: cannot be bribed or killed this round">${ICON.coffee}</span>` : '')
     + (R.cake != null ? `<span class="tok" style="--c:${pcol(R.cake)}" title="Cake from ${esc(pname(R.cake))}: 2x rank if the guest is still here before travelers leave">${ICON.cake}</span>` : '');
-  const tr = Engine.isTrailer(R);
-  return `<div class="room ${open ? '' : 'shut'} ${tr ? 'trailer' : ''} ${tgtRoom(i) ? 'tgt' : ''} ${chosen ? 'chosen' : ''} ${UI.flash.has('r' + i) ? 'fl' : ''}" data-a="room" data-i="${i}" tabindex="-1">
+  const tr = Engine.isTrailer(R), glow = guestGlow(i);
+  return `<div class="room ${glow} ${open ? '' : 'shut'} ${tr ? 'trailer' : ''} ${tgtRoom(i) ? 'tgt' : ''} ${chosen ? 'chosen' : ''} ${UI.flash.has('r' + i) ? 'fl' : ''}" data-a="room" data-i="${i}" tabindex="-1">
     <div class="door"><b>${tr ? ICON.trailer : i + 1}</b>${key}${rs}${police}${extras}</div>
-    <div class="slot">${R.guest ? cardSVG(R.guest) : `<div class="empty">${open ? (tr ? 'trailer' : 'free') : ''}</div>`}</div></div>`;
+    <div class="slot ${glow}">${R.guest ? cardSVG(R.guest) : `<div class="empty">${open ? (tr ? 'trailer' : 'free') : ''}</div>`}</div></div>`;
 }
 function exitCounts(S) { const c = {}; for (const id of S.exit) c[T(id).color] = (c[T(id).color] || 0) + 1; return c; }
 const evLiveNow = S => !!(S.ev && S.ev.cur && S.rooms.some(R => R.guest && Engine.isCarnie(R.guest)));
@@ -2589,7 +2623,9 @@ function promptHTML() {
     const id = S.rooms[sel.room].guest, cb = Engine.cost(S, pd.p, {t: 'bribe', rooms: [sel.room]}), ck = Engine.cost(S, pd.p, {t: 'kill', rooms: [sel.room]});
     const sp = Engine.special(id);
     const wheel = o.wheel.includes(sel.room) ? opt(`${ICON.build} Wheelbarrow: build here (${plural(Engine.cost(S, pd.p, {t: 'build', room: sel.room}), 'card')})`, 'wheel') : '';
-    return `<div class="prompt"><div class="pcard">${cardSVG(id)}</div><div class="ptext"><b>${esc(T(id).name)}</b> in ${esc(Engine.roomName(S, sel.room))}: ${rankText(T(id))}, ${T(id).money}F in his pockets.${T(id).annex ? `<br><small>${esc(T(id).annex)}: ${esc(T(id).text)}</small>` : ''}${sp ? `<br><small>${esc(SPECIAL_SHORT[sp])}</small>` : ''}</div>
+    const shown = UI.inspect && UI.inspect.id === id && !UI.inspect.dead;
+    return `<div class="prompt">${shown ? `<div class="ptext"><b>${esc(T(id).name)}</b> in ${esc(Engine.roomName(S, sel.room))}: choose an action.</div>`
+      : `<div class="pcard">${cardSVG(id)}</div><div class="ptext"><b>${esc(T(id).name)}</b> in ${esc(Engine.roomName(S, sel.room))}: ${rankText(T(id))}, ${T(id).money}F in his pockets.${T(id).annex ? `<br><small>${esc(T(id).annex)}: ${esc(T(id).text)}</small>` : ''}${sp ? `<br><small>${esc(SPECIAL_SHORT[sp])}</small>` : ''}</div>`}
       ${btns(opt(`${ICON.bribe} Bribe (${plural(cb, 'card')})`, 'bribe', 'primary', o.bribe.includes(sel.room) ? '' : 'Not enough cards in hand'),
         opt(`${ICON.kill} Kill (${plural(ck, 'card')})`, 'kill', '', o.kill.includes(sel.room) ? '' : 'Not enough cards in hand'), wheel, opt('Cancel', 'cancel', 'ghost'))}</div>`;
   }
@@ -2714,7 +2750,7 @@ function renderGame() {
   const tabs = ['players', 'journal', 'intel'].map(t => `<button class="${UI.tab === t ? 'on' : ''}" data-a="tab" data-t="${t}">${{players: 'Players', journal: 'Journal', intel: 'Rival intel'}[t]}</button>`).join('');
   app.innerHTML = `${defs}<div id="game" class="${UI.anim ? '' : 'noanim'}">${topHTML()}
     <div class="main"><div class="play">${innHTML()}${tableauHTML(viewer())}</div>
-      <aside class="side ${UI.sheetMin ? 'min' : ''}"><button class="grab" data-a="sheet" aria-label="${UI.sheetMin ? 'Expand panel' : 'Minimise panel'}"><span></span></button>${promptHTML()}
+      <aside class="side ${UI.sheetMin ? 'min' : ''}"><button class="grab" data-a="sheet" aria-label="${UI.sheetMin ? 'Expand panel' : 'Minimise panel'}"><span></span></button>${inspectHTML()}${promptHTML()}
         <div class="panelrest"><div class="tabs">${solo() ? tabs.replace(/<button[^>]*data-t="intel"[^>]*>.*?<\/button>/, '') : tabs}</div><div class="tabbody">${sideBody()}</div></div></aside>
     </div></div>${UI.debug ? debugHTML() : ''}`;
   if (UI.tab !== 'journal') $('.tabbody').scrollTop = keep;
@@ -2730,10 +2766,10 @@ function debugHTML() {
 }
 
 // ---------- modal ----------
-function modal({title, body, x = true, dock = true, peek = false, buttons = [], cls = ''}) {
+function modal({title, body, x = true, dock = true, buttons = [], cls = ''}) {
   closeModal();
   const b = document.createElement('div');
-  b.className = 'backdrop' + (peek ? ' peek' : UI.docked && dock ? ' docked' : '');
+  b.className = 'backdrop' + (UI.docked && dock ? ' docked' : '');
   b.innerHTML = `<div class="modal ${cls}" role="dialog" aria-label="${esc(title)}"><div class="mh"><h2>${esc(title)}</h2>${dock ? `<button class="ghost" data-m="dock" title="Dock to side">\u21E5</button>` : ''}${x ? `<button class="ghost" data-m="x" aria-label="Close">\u2715</button>` : ''}</div>
     <div class="mb">${body}</div><div class="mf">${buttons.map((bt, i) => `<button class="${bt.cls || ''}" data-m="b${i}" ${bt.disabled ? 'disabled' : ''}>${bt.label}</button>`).join('')}${x ? `<button data-m="x">Close</button>` : ''}</div></div>`;
   b.addEventListener('click', e => {
@@ -2767,6 +2803,7 @@ function commit(m, human) {
   Sound(kinds.has('end') ? (N.lost ? 'lose' : 'win') : kinds.has('season') ? 'season' : kinds.has('police') ? 'police' : kinds.has('kill') ? 'kill' : kinds.has('bury') ? 'bury' : kinds.has('round') ? 'round' : kinds.has('money') ? 'coin' : 'card');
   if (!human && !UI.auto && m.t !== 'lodge' && prev.pending && prev.pending.t !== 'lodge') aiAnnounce(prev.pending.p, fresh.filter(l => l.p === prev.pending.p));
   UI.S = N; UI.sel = null; UI.kcur = null;
+  if (human) UI.inspect = null;
   if (!UI.auto) {
     if (N.season !== prev.season && humans().length && !UI.freeze) { UI.hold = true; setTimeout(() => showSeason(N), 400); }
     else if (N.final && !prev.final && !UI.freeze) toast('Final round: the Entrance Stack is empty for the second time.', 3000);
@@ -2779,7 +2816,7 @@ function commit(m, human) {
 function undo() {
   if (!UI.undo.length) return;
   clearTimeout(UI.timer); clearTimeout(UI.watchdog); UI.aiStuck = null; UI.gen++;
-  UI.S = UI.undo.pop(); UI.sel = null; UI.kcur = null; UI.hold = false;
+  UI.S = UI.undo.pop(); UI.sel = null; UI.inspect = null; UI.kcur = null; UI.hold = false;
   if (pnp()) UI.viewer = actor(UI.S);
   save(); renderGame(); next();
 }
@@ -2893,10 +2930,16 @@ function defaultDest(used, id) {
 function onRoom(i, cardTap = false) {
   const S = UI.S, R = S.rooms[i];
   const pd = S.pending, sel = UI.sel;
-  if (cardTap && R.guest) {
-    if (myTurn() && pd.t === 'turn' && !sel && tgtRoom(i)) startSel({mode: 'choose', room: i});
-    showCard(R.guest, false, {room: i});
-    return;
+  if (cardTap && R.guest && !(myTurn() && ['lodge', 'rs', 'monk'].includes(pd.t))) {
+    UI.inspect = {id: R.guest, dead: false}; UI.sheetMin = false;
+    if (myTurn() && pd.t === 'turn') {
+      if (sel && (sel.mode === 'bribe' || sel.mode === 'kill') && sel.multi) return onRoom(i);
+      if (!sel || sel.mode === 'choose') {
+        const o = Engine.options(S, pd.p);
+        UI.sel = o.bribe.includes(i) || o.kill.includes(i) || o.wheel.includes(i) ? {mode: 'choose', room: i} : null;
+      }
+    }
+    return renderGame();
   }
   if (!myTurn()) return R.guest ? showCard(R.guest) : null;
   if (pd.t === 'lodge') { if (tgtRoom(i)) commit({t: 'lodge', room: i}, true); return; }
@@ -2915,33 +2958,40 @@ function onRoom(i, cardTap = false) {
 }
 function onHand(id) {
   const S = UI.S, sel = UI.sel;
-  if (!myTurn()) return showCard(id, false, {hand: true});
+  UI.inspect = {id, dead: false}; UI.sheetMin = false;
+  if (!myTurn()) return renderGame();
   const pd = S.pending;
-  if (pd.t === 'release') {
-    return showCard(id, false, {hand: true});
+  if (pd.t === 'release' && sel) {
+    sel.ids = sel.ids.includes(id) ? sel.ids.filter(x => x !== id) : [...sel.ids, id].slice(-pd.k);
+    return renderGame();
   }
-  if (pd.t !== 'turn') return showCard(id, false, {hand: true});
+  if (pd.t !== 'turn') return renderGame();
   if (sel && ['bribe', 'kill', 'build', 'bury'].includes(sel.mode)) {
-    return showCard(id, false, {hand: true});
+    if (id !== sel.card) {
+      if (sel.pay.includes(id)) sel.pay = sel.pay.filter(x => x !== id);
+      else { sel.pay.push(id); if (sel.pay.length > selCost()) sel.pay.shift(); }
+    }
+    return renderGame();
   }
-  if (Engine.options(S, pd.p).build.includes(id)) startSel({mode: 'build', card: id, objs: []});
-  showCard(id, false, {hand: true});
+  if (Engine.options(S, pd.p).build.includes(id)) return startSel({mode: 'build', card: id, objs: []});
+  if (sel && sel.mode === 'choose') UI.sel = null;
+  renderGame();
 }
 function onCorpse(id) {
   const S = UI.S, sel = UI.sel;
-  if (!myTurn() || S.pending.t !== 'turn') return showCard(id, true, {corpse: true});
+  UI.inspect = {id, dead: true}; UI.sheetMin = false;
+  if (!myTurn() || S.pending.t !== 'turn') return renderGame();
   if (sel && sel.mode === 'bury') {
     if (Engine.count(S.players[S.pending.p], 'crypt') && !sel.items.some(it => it.id === id)) {
       const d = defaultDest(sel.items, id);
       if (!d) return toast('No free annex left');
-      sel.items.push({id, owner: d.p, annex: d.i}); repay(); renderGame();
+      sel.items.push({id, owner: d.p, annex: d.i}); repay();
     }
-    return showCard(id, true, {corpse: true});
+    return renderGame();
   }
-  if (!tgtCorpse(id)) return showCard(id, true, {corpse: true});
+  if (!tgtCorpse(id)) return renderGame();
   const d = defaultDest([], id);
   startSel({mode: 'bury', items: [{id, owner: d ? d.p : undefined, annex: d ? d.i : undefined}], objs: []});
-  showCard(id, true, {corpse: true});
 }
 function onAnnex(q, i) {
   const S = UI.S, sel = UI.sel;
@@ -2996,58 +3046,24 @@ function commitState(X) {
   X.rooms.forEach((R, i) => { if (R.guest !== prev.rooms[i].guest) UI.flash.add('r' + i); });
   Sound('card'); save(); renderGame(); next();
 }
-function popupCardButtons(id, ctx = {}) {
-  const S = UI.S, sel = UI.sel, pd = S && S.pending;
-  if (!S || !pd || !myTurn()) return [];
-  if (ctx.hand && pd.t === 'release' && sel) {
-    const on = sel.ids.includes(id);
-    return [{label: on ? '\u2714 Keep this accomplice' : 'Release this accomplice', cls: on ? '' : 'primary', fn: () => {
-      sel.ids = on ? sel.ids.filter(x => x !== id) : [...sel.ids, id].slice(-pd.k);
-      renderGame();
-    }}];
-  }
-  if (ctx.room != null && pd.t === 'turn' && sel && sel.mode === 'choose' && sel.room === ctx.room) {
-    const o = Engine.options(S, pd.p), cb = Engine.cost(S, pd.p, {t: 'bribe', rooms: [ctx.room]}), ck = Engine.cost(S, pd.p, {t: 'kill', rooms: [ctx.room]});
-    const out = [
-      {label: `${ICON.bribe} Bribe (${plural(cb, 'card')})`, cls: 'primary', disabled: !o.bribe.includes(ctx.room), fn: () => onOpt('bribe')},
-      {label: `${ICON.kill} Kill (${plural(ck, 'card')})`, disabled: !o.kill.includes(ctx.room), fn: () => onOpt('kill')},
-    ];
-    if (o.wheel.includes(ctx.room)) out.push({label: `${ICON.build} Wheelbarrow: build annex`, fn: () => onOpt('wheel')});
-    return out;
-  }
-  if (ctx.hand && pd.t === 'turn' && sel && ['bribe', 'kill', 'build', 'bury'].includes(sel.mode)) {
-    if (id === sel.card || sel.items && sel.items.some(it => it.id === id)) {
-      const m = selMove(), err = m && Engine.check(S, m);
-      return [{label: sel.mode === 'build' ? `${ICON.build} Build this annex` : sel.mode === 'bury' ? `${ICON.bury} Bury this corpse` : 'Confirm action', cls: 'primary', disabled: !m || !!err, fn: () => onOpt('confirm')}];
-    }
-    const on = sel.pay.includes(id);
-    return [{label: on ? '\u2714 Remove from payment' : 'Use as payment', fn: () => {
-      const need = selCost();
-      if (on) sel.pay = sel.pay.filter(x => x !== id);
-      else { sel.pay.push(id); if (sel.pay.length > need) sel.pay.shift(); }
-      renderGame();
-    }}];
-  }
-  if (ctx.corpse && pd.t === 'turn' && sel && sel.mode === 'bury') {
-    const m = selMove(), err = m && Engine.check(S, m);
-    const out = [{label: `${ICON.bury} Bury selected corpse${sel.items.length === 1 ? '' : 's'}`, cls: 'primary', disabled: !m || !!err, fn: () => onOpt('confirm')}];
-    if (Engine.count(S.players[pd.p], 'crypt') && sel.items.some(it => it.id === id)) out.push({label: 'Remove this corpse', fn: () => {
-      sel.items = sel.items.filter(it => it.id !== id); if (!sel.items.length) UI.sel = null; else repay(); renderGame();
-    }});
-    return out;
-  }
-  return [];
+// Card details live at the top of the side panel, above the action prompt, so the board and the actions stay visible.
+function showCard(id, dead) {
+  UI.inspect = {id, dead: !!dead}; UI.sheetMin = false;
+  renderGame();
 }
-function showCard(id, dead, ctx = {}) {
-  const t = T(id), apt = Engine.apt(id), sp = Engine.special(id);
+function inspectHTML() {
+  const ins = UI.inspect;
+  if (!ins || !UI.S) return '';
+  const id = ins.id, dead = ins.dead, t = T(id), apt = Engine.apt(id), sp = Engine.special(id);
   const kind = t.module === 'notables' ? 'Notable' : COLOR_NAMES[t.color][0].toUpperCase() + COLOR_NAMES[t.color].slice(1);
   const noAnnex = t.color === 'grey' ? 'Police cannot become annexes. A policeman in a room at the end of the round starts an investigation.'
     : t.color === 'yellow' ? 'Peasants cannot become annexes and always return to the bistro.' : sp ? esc(t.text) : 'This carnie has no annex.';
-  modal({title: t.name, peek: true, buttons: popupCardButtons(id, ctx), body: `<div class="cardpop"><div class="flip">${cardSVG(id, {dead: !!dead})}${cardSVG(id, {dead: !dead})}</div><div>
+  return `<div class="inspect"><div class="ih"><b>${esc(t.name)}${dead ? ' (corpse)' : ''}</b><button class="ghost" data-a="uninspect" aria-label="Close card details">\u2715</button></div>
+    <div class="ib"><div class="flip">${cardSVG(id, {dead})}${cardSVG(id, {dead: !dead})}</div><div class="itext">
     <p><b>${kind}</b>, ${rankText(t)}, ${t.money}F in his pockets.</p>
     <p>${apt ? `Aptitude: <b>${apt === 'bury' ? ICON.faith : ICON[apt]} ${ACTION_NAMES[apt]}</b> (returns to hand when used to pay for it).` : 'No aptitude: always leaves when used to pay.'}</p>
     ${t.annex ? `<p>Annex: <b>${esc(t.annex)}</b> (holds ${plural(t.brank, 'corpse')}): ${esc(t.text)}</p>` : `<p>${noAnnex}</p>`}
-    <p class="muted">Bribe or kill: ${plural(t.rank, 'accomplice')} (top rank). ${t.annex ? `Build: ${plural(t.brank, 'accomplice')}. ` : ''}Bury: ${plural(t.brank, 'accomplice')} (bottom rank), holding ${t.money}F.</p></div></div>`});
+    <p class="muted">Bribe or kill: ${plural(t.rank, 'accomplice')} (top rank). ${t.annex ? `Build: ${plural(t.brank, 'accomplice')}. ` : ''}Bury: ${plural(t.brank, 'accomplice')} (bottom rank), holding ${t.money}F.</p></div></div></div>`;
 }
 function showObject(id) {
   const o = OBJECTS[id];
@@ -3112,6 +3128,7 @@ document.addEventListener('click', e => {
     case 'exit': return showExit();
     case 'bigboard': return showBoard();
     case 'aifallback': return recoverAI();
+    case 'uninspect': UI.inspect = null; return renderGame();
     case 'opt': return onOpt(el.dataset.o);
     case 'dest': return onAnnex(+el.dataset.p, +el.dataset.i);
     case 'undo': return undo();
@@ -3313,14 +3330,14 @@ function landing() {
     store.set('setup', o); landing();
   });
   $('#go').onclick = () => startGame(o);
-  if (canCont) $('#cont').onclick = () => { UI.S = sv.S; UI.viewer = sv.viewer || 0; UI.seasonSnap = sv.seasonSnap || null; UI.undo = []; UI.gen++; UI.hold = false; UI.sel = null; renderGame(); next(); };
+  if (canCont) $('#cont').onclick = () => { UI.S = sv.S; UI.viewer = sv.viewer || 0; UI.seasonSnap = sv.seasonSnap || null; UI.undo = []; UI.gen++; UI.hold = false; UI.sel = null; UI.inspect = null; renderGame(); next(); };
   $('#tourbtn').onclick = tourStart;
   $('#howto').onclick = showHelp; $('#stats').onclick = showStats; $('#ver').onclick = showChangelog;
 }
 function startGame(o, seed) {
   const seats = seatsFor(o);
   UI.S = Engine.newGame({seed: seed ?? (Q.has('seed') ? +Q.get('seed') : undefined), long: o.long, unlimited: o.unlimited, fcfs: o.fcfs, seats, mods: o.mods || {}});
-  UI.undo = []; UI.gen++; UI.sel = null; UI.tab = 'players'; UI.hold = false; UI.kcur = null; UI.practice = false;
+  UI.undo = []; UI.gen++; UI.sel = null; UI.inspect = null; UI.tab = 'players'; UI.hold = false; UI.kcur = null; UI.practice = false;
   UI.seasonSnap = snap(UI.S);
   UI.viewer = humans()[0] ?? 0;
   if (pnp()) UI.viewer = actor(UI.S);
@@ -3406,7 +3423,11 @@ document.addEventListener('keydown', e => {
   if (UI.tour && (k === 'ArrowRight' || k === 'ArrowLeft') && !UI.tour.waiting) { e.preventDefault(); return tourGo(UI.tour.i + (k === 'ArrowRight' ? 1 : -1)); }
   if (!S || !$('#game')) return;
   if (k === '?') { e.preventDefault(); return showKeys(); }
-  if (k === 'Escape') { if (UI.sel && myTurn() && S.pending.t === 'turn') { UI.sel = null; renderGame(); } return; }
+  if (k === 'Escape') {
+    if (UI.inspect) { UI.inspect = null; return renderGame(); }
+    if (UI.sel && myTurn() && S.pending.t === 'turn') { UI.sel = null; renderGame(); }
+    return;
+  }
   if (k === 'z' || k === 'Z') return undo();
   if (k === 'j' || k === 'J') { UI.tab = 'journal'; UI.sheetMin = false; return renderGame(); }
   if ((k === 'i' || k === 'I') && !solo()) { UI.tab = 'intel'; UI.sheetMin = false; return renderGame(); }
@@ -3491,7 +3512,7 @@ function tourStart() {
   let g = 0;
   while (S.pending && (S.pending.t !== 'turn' || S.pending.p !== 0) && g++ < 40) Engine.apply(S, AI.decide(S, 'easy'));
   UI.S = S;
-  UI.undo = []; UI.viewer = 0; UI.tab = 'players'; UI.hold = false; UI.kcur = null; UI.sel = null; UI.seasonSnap = snap(UI.S);
+  UI.undo = []; UI.viewer = 0; UI.tab = 'players'; UI.hold = false; UI.kcur = null; UI.sel = null; UI.inspect = null; UI.seasonSnap = snap(UI.S);
   UI.tour = {i: 0, back, log0: 0};
   document.body.insertAdjacentHTML('beforeend', `<div id="tour"><div class="spot"></div><div class="tcard" role="dialog" aria-live="polite"></div></div>`);
   $('#tour .tcard').addEventListener('click', e => {
